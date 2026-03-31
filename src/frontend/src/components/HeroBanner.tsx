@@ -21,7 +21,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     if (items.length <= 1) return;
     const timer = setInterval(() => {
       setCurrent((c) => (c + 1) % Math.min(items.length, 5));
-    }, 8000);
+    }, 20000);
     return () => clearInterval(timer);
   }, [items.length]);
 
