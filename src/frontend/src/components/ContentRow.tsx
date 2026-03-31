@@ -46,10 +46,10 @@ export default function ContentRow({
           <ChevronLeft size={20} />
         </button>
 
-        {/* Scrollable row */}
+        {/* Scrollable row — pt-8 gives headroom so scaled/tilted cards aren't clipped at the top */}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto px-6 md:px-14 pb-2"
+          className="flex gap-3 overflow-x-auto px-6 md:px-14 pt-8 pb-4"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {loading
