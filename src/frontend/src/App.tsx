@@ -4,27 +4,47 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ApiKeySetup from "./components/ApiKeySetup";
+import BottomNav from "./components/BottomNav";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { hasApiKey } from "./lib/tmdb";
+import ContinueWatchingPage from "./pages/ContinueWatchingPage";
 import HomePage from "./pages/HomePage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import MoviesPage from "./pages/MoviesPage";
+import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
 import TVDetailPage from "./pages/TVDetailPage";
 import TVPage from "./pages/TVPage";
 import WatchMoviePage from "./pages/WatchMoviePage";
 import WatchTVPage from "./pages/WatchTVPage";
 
+function ScrollToTop() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const prevPathRef = useRef(pathname);
+
+  useEffect(() => {
+    if (prevPathRef.current !== pathname) {
+      prevPathRef.current = pathname;
+      window.scrollTo(0, 0);
+    }
+  });
+
+  return null;
+}
+
 function RootLayout() {
   return (
-    <div className="bg-[#0B0B0B] min-h-screen">
+    <div className="bg-[#0B0B0B] min-h-screen pb-14">
+      <ScrollToTop />
       <Navbar />
       <Outlet />
       <Footer />
+      <BottomNav />
     </div>
   );
 }
@@ -81,6 +101,18 @@ const watchTVRoute = createRoute({
   component: WatchTVPage,
 });
 
+const continueWatchingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/continue-watching",
+  component: ContinueWatchingPage,
+});
+
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile",
+  component: ProfilePage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   moviesRoute,
@@ -90,6 +122,8 @@ const routeTree = rootRoute.addChildren([
   tvDetailRoute,
   watchMovieRoute,
   watchTVRoute,
+  continueWatchingRoute,
+  profileRoute,
 ]);
 
 const router = createRouter({ routeTree });

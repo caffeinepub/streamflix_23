@@ -1,6 +1,8 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useWatchHistory } from "../hooks/useWatchHistory";
+import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchMovieDetails } from "../lib/tmdb";
 import type { Movie } from "../lib/types";
 
@@ -9,15 +11,35 @@ export default function WatchMoviePage() {
   const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(true);
+  const { addToHistory } = useWatchHistory();
 
   const movieId = Number.parseInt(id, 10);
+
+  const stableAdd = useCallback(addToHistory, []);
+
+  useEffect(() => {
+    void enterPlayerMode();
+    return () => {
+      void exitPlayerMode();
+    };
+  }, []);
 
   useEffect(() => {
     if (!movieId) return;
     let cancelled = false;
     fetchMovieDetails(movieId)
       .then((m) => {
-        if (!cancelled) setMovie(m);
+        if (!cancelled) {
+          setMovie(m);
+          stableAdd({
+            id: m.id,
+            type: "movie",
+            title: m.title,
+            posterPath: m.poster_path,
+            backdropPath: m.backdrop_path,
+            timestamp: Date.now(),
+          });
+        }
       })
       .catch(console.error)
       .finally(() => {
@@ -26,7 +48,7 @@ export default function WatchMoviePage() {
     return () => {
       cancelled = true;
     };
-  }, [movieId]);
+  }, [movieId, stableAdd]);
 
   return (
     <div className="min-h-screen bg-black flex flex-col">
@@ -35,7 +57,10 @@ export default function WatchMoviePage() {
         <button
           type="button"
           data-ocid="watch.back.button"
-          onClick={() => navigate({ to: "/movie/$id", params: { id } })}
+          onClick={async () => {
+            await exitPlayerMode();
+            navigate({ to: "/movie/$id", params: { id } });
+          }}
           className="flex items-center gap-2 text-[#B3B3B3] hover:text-white transition-colors"
         >
           <ArrowLeft size={20} />
@@ -55,6 +80,7 @@ export default function WatchMoviePage() {
       {/* Player */}
       <div
         className="flex-1 flex items-center justify-center bg-black p-0"
+        style={{ minHeight: 0 }}
         data-ocid="watch.canvas_target"
       >
         <iframe
@@ -64,7 +90,6 @@ export default function WatchMoviePage() {
           style={{
             height: "80vh",
             border: "none",
-            borderRadius: "8px",
             display: "block",
           }}
           allowFullScreen

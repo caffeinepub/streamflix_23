@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ItemType } from "../backend";
 import ContentRow from "../components/ContentRow";
+import ContinueWatchingRow from "../components/ContinueWatchingRow";
 import HeroBanner from "../components/HeroBanner";
 import { useActor } from "../hooks/useActor";
 import {
@@ -77,6 +78,7 @@ export default function HomePage() {
     <div className="bg-[#0B0B0B] min-h-screen">
       <HeroBanner items={trending} />
       <div className="relative -mt-12 z-10 pb-8">
+        <ContinueWatchingRow />
         <ContentRow
           title="Trending Today"
           items={trending}

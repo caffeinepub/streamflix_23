@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Star } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatRating, formatYear } from "../lib/helpers";
 import {
   fetchPopularTV,
@@ -19,20 +19,25 @@ export default function TVPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     void fetchTVGenres().then((data) => setGenres(data.genres));
   }, []);
 
+  // Reset and load first page when genre changes
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setShows([]);
+    setPage(1);
     const load = async () => {
       try {
         const data = selectedGenre
-          ? await fetchTVByGenre(selectedGenre, page)
-          : await fetchPopularTV(page);
+          ? await fetchTVByGenre(selectedGenre, 1)
+          : await fetchPopularTV(1);
         if (!cancelled) {
           setShows(data.results);
           setTotalPages(Math.min(data.total_pages, 100));
@@ -47,11 +52,62 @@ export default function TVPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedGenre, page]);
+  }, [selectedGenre]);
+
+  // Load next pages
+  useEffect(() => {
+    if (page === 1) return;
+    let cancelled = false;
+    setLoadingMore(true);
+    const load = async () => {
+      try {
+        const data = selectedGenre
+          ? await fetchTVByGenre(selectedGenre, page)
+          : await fetchPopularTV(page);
+        if (!cancelled) {
+          setShows((prev) => [...prev, ...data.results]);
+          setTotalPages(Math.min(data.total_pages, 100));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!cancelled) setLoadingMore(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, selectedGenre]);
+
+  // Intersection observer for infinite scroll
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (
+        entry.isIntersecting &&
+        !loading &&
+        !loadingMore &&
+        page < totalPages
+      ) {
+        setPage((p) => p + 1);
+      }
+    },
+    [loading, loadingMore, page, totalPages],
+  );
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [handleObserver]);
 
   function selectGenre(id: number | null) {
     setSelectedGenre(id);
-    setPage(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -142,35 +198,21 @@ export default function TVPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-10">
-          <button
-            type="button"
-            onClick={() => {
-              setPage((p) => Math.max(1, p - 1));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            disabled={page === 1}
-            className="flex items-center gap-1 bg-[#2B2B2B] text-white px-4 py-2 rounded-lg disabled:opacity-40 hover:bg-[#3A3A3A] transition-colors text-sm"
-          >
-            <ChevronLeft size={16} /> Prev
-          </button>
-          <span className="text-[#B3B3B3] text-sm">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setPage((p) => Math.min(totalPages, p + 1));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-            disabled={page === totalPages}
-            className="flex items-center gap-1 bg-[#2B2B2B] text-white px-4 py-2 rounded-lg disabled:opacity-40 hover:bg-[#3A3A3A] transition-colors text-sm"
-          >
-            Next <ChevronRight size={16} />
-          </button>
+      {/* Load more sentinel */}
+      <div ref={sentinelRef} className="h-10 mt-4" />
+
+      {/* Loading more spinner */}
+      {loadingMore && (
+        <div className="flex justify-center py-6">
+          <div className="w-8 h-8 border-2 border-[#E50914] border-t-transparent rounded-full animate-spin" />
         </div>
+      )}
+
+      {/* End of results */}
+      {!loading && !loadingMore && page >= totalPages && shows.length > 0 && (
+        <p className="text-center text-[#555] text-sm py-6">
+          You've reached the end
+        </p>
       )}
     </div>
   );

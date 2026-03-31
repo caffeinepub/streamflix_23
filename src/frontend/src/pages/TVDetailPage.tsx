@@ -6,6 +6,7 @@ import ContentRow from "../components/ContentRow";
 import TrailerModal from "../components/TrailerModal";
 import { useActor } from "../hooks/useActor";
 import { formatDate, formatRating, truncate } from "../lib/helpers";
+import { enterPlayerMode } from "../lib/playerUtils";
 import {
   fetchSimilarTV,
   fetchTVCredits,
@@ -203,12 +204,13 @@ export default function TVDetailPage() {
               <button
                 type="button"
                 data-ocid="tv.primary_button"
-                onClick={() =>
+                onClick={async () => {
+                  await enterPlayerMode();
                   navigate({
                     to: "/watch/tv/$id/$season/$episode",
                     params: { id, season: "1", episode: "1" },
-                  })
-                }
+                  });
+                }}
                 className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
               >
                 <Play size={18} fill="currentColor" />

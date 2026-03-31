@@ -11,6 +11,7 @@ import {
   formatRuntime,
   truncate,
 } from "../lib/helpers";
+import { enterPlayerMode } from "../lib/playerUtils";
 import {
   fetchMovieCredits,
   fetchMovieDetails,
@@ -201,9 +202,10 @@ export default function MovieDetailPage() {
               <button
                 type="button"
                 data-ocid="movie.primary_button"
-                onClick={() =>
-                  navigate({ to: "/watch/movie/$id", params: { id } })
-                }
+                onClick={async () => {
+                  await enterPlayerMode();
+                  navigate({ to: "/watch/movie/$id", params: { id } });
+                }}
                 className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
               >
                 <Play size={18} fill="currentColor" />

@@ -7,7 +7,9 @@ import {
 } from "@/components/ui/select";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useWatchHistory } from "../hooks/useWatchHistory";
+import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchTVDetails, fetchTVSeasonDetails } from "../lib/tmdb";
 import type { TVShow } from "../lib/types";
 
@@ -19,6 +21,7 @@ export default function WatchTVPage() {
   };
   const { id, season, episode } = params;
   const navigate = useNavigate();
+  const { addToHistory } = useWatchHistory();
 
   const showId = Number.parseInt(id, 10);
   const seasonNum = Number.parseInt(season, 10);
@@ -27,6 +30,15 @@ export default function WatchTVPage() {
   const [show, setShow] = useState<TVShow | null>(null);
   const [loading, setLoading] = useState(true);
   const [episodeCount, setEpisodeCount] = useState<number>(20);
+
+  const stableAdd = useCallback(addToHistory, []);
+
+  useEffect(() => {
+    void enterPlayerMode();
+    return () => {
+      void exitPlayerMode();
+    };
+  }, []);
 
   useEffect(() => {
     if (!showId) return;
@@ -43,6 +55,20 @@ export default function WatchTVPage() {
       cancelled = true;
     };
   }, [showId]);
+
+  useEffect(() => {
+    if (!show) return;
+    stableAdd({
+      id: show.id,
+      type: "tv",
+      title: show.name,
+      posterPath: show.poster_path,
+      backdropPath: show.backdrop_path,
+      timestamp: Date.now(),
+      season: seasonNum,
+      episode: episodeNum,
+    });
+  }, [show, seasonNum, episodeNum, stableAdd]);
 
   useEffect(() => {
     if (!showId || !seasonNum) return;
@@ -75,7 +101,10 @@ export default function WatchTVPage() {
         <button
           type="button"
           data-ocid="watch.back.button"
-          onClick={() => navigate({ to: "/tv/$id", params: { id } })}
+          onClick={async () => {
+            await exitPlayerMode();
+            navigate({ to: "/tv/$id", params: { id } });
+          }}
           className="flex items-center gap-2 text-[#B3B3B3] hover:text-white transition-colors"
         >
           <ArrowLeft size={20} />
@@ -97,7 +126,11 @@ export default function WatchTVPage() {
       </div>
 
       {/* Player */}
-      <div className="flex-1 bg-black" data-ocid="watch.canvas_target">
+      <div
+        className="flex-1 bg-black"
+        style={{ minHeight: 0 }}
+        data-ocid="watch.canvas_target"
+      >
         <iframe
           src={`https://www.vidking.net/embed/tv/${showId}/${seasonNum}/${episodeNum}`}
           title={`${show?.name ?? "Show"} S${seasonNum}E${episodeNum}`}
