@@ -5,6 +5,7 @@ import {
   Clock,
   Play,
   Plus,
+  RotateCcw,
   Star,
   Volume2,
   VolumeX,
@@ -12,6 +13,8 @@ import {
 import { useEffect, useState } from "react";
 import ContentRow from "../components/ContentRow";
 import TrailerModal from "../components/TrailerModal";
+import { useAuth } from "../contexts/AuthContext";
+import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
 import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import {
   formatDate,
@@ -33,9 +36,20 @@ import {
 } from "../lib/tmdb";
 import type { CastMember, MediaItem, Movie, Video } from "../lib/types";
 
+function formatTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0)
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export default function MovieDetailPage() {
   const { id } = useParams({ strict: false }) as { id: string };
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { history } = useFirestoreWatchHistory();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [cast, setCast] = useState<CastMember[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -48,6 +62,15 @@ export default function MovieDetailPage() {
 
   const movieId = Number.parseInt(id, 10);
   const inWatchlist = watchlistIds.has(movieId);
+
+  const watchEntry = history.find(
+    (e) => e.id === movieId && e.type === "movie",
+  );
+  const hasProgress =
+    !!user &&
+    !!watchEntry &&
+    typeof watchEntry.currentTime === "number" &&
+    watchEntry.currentTime > 60;
 
   useEffect(() => {
     if (!movieId) return;
@@ -250,22 +273,59 @@ export default function MovieDetailPage() {
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                data-ocid="movie.primary_button"
-                onClick={async () => {
-                  await enterPlayerMode();
-                  navigate({ to: "/watch/movie/$id", params: { id } });
-                }}
-                className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
-              >
-                <Play size={18} fill="currentColor" />
-                Play
-              </button>
+              {hasProgress ? (
+                <>
+                  {/* Resume button */}
+                  <button
+                    type="button"
+                    data-ocid="movie.primary_button"
+                    onClick={async () => {
+                      await enterPlayerMode();
+                      navigate({ to: "/watch/movie/$id", params: { id } });
+                    }}
+                    className="flex flex-col items-center justify-center bg-white text-black font-bold px-6 py-2.5 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm min-w-[120px]"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Play size={16} fill="currentColor" />
+                      Resume
+                    </span>
+                    <span className="text-[10px] font-normal text-black/60 mt-0.5">
+                      from {formatTime(watchEntry!.currentTime!)}
+                    </span>
+                  </button>
+
+                  {/* Play from Beginning button */}
+                  <button
+                    type="button"
+                    data-ocid="movie.secondary_button"
+                    onClick={async () => {
+                      await enterPlayerMode();
+                      navigate({ to: "/watch/movie/$id", params: { id } });
+                    }}
+                    className="flex items-center gap-2 bg-[#2B2B2B] hover:bg-[#3A3A3A] text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm border border-[#3A3A3A]"
+                  >
+                    <RotateCcw size={16} />
+                    Play from Beginning
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  data-ocid="movie.primary_button"
+                  onClick={async () => {
+                    await enterPlayerMode();
+                    navigate({ to: "/watch/movie/$id", params: { id } });
+                  }}
+                  className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
+                >
+                  <Play size={18} fill="currentColor" />
+                  Play
+                </button>
+              )}
               {trailer && (
                 <button
                   type="button"
-                  data-ocid="movie.secondary_button"
+                  data-ocid="movie.toggle"
                   onClick={() => setActiveTrailer(trailer)}
                   className="flex items-center gap-2 bg-[#2B2B2B] hover:bg-[#3A3A3A] text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm border border-[#3A3A3A]"
                 >

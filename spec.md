@@ -1,28 +1,27 @@
 # StreamFlix
 
 ## Current State
-HeroBanner displays a backdrop image with gradient overlay, title, description, rating, and Play/More Info buttons. It auto-rotates through up to 5 trending items every 8 seconds. No video playback in the banner.
+Item cards across all sections (home rows, Movies, TV Shows, Search, My List) have hover overlays with Play, Add to List, and More Info buttons. The hover transition is abrupt — no animation on the card itself.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Fetch TMDB video data for each hero banner item using `/movie/{id}/videos` or `/tv/{id}/videos` to get the YouTube trailer key
-- YouTube iframe embed that autoplays muted in the background (no controls, no branding) when a trailer is available
-- Mute/unmute toggle button (bottom-right of banner) so users can optionally enable audio
-- Auto-hide YouTube controls: `controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1`
+- CSS perspective container on card wrappers so 3D transforms render correctly
+- Smooth 3D lift animation on hover: scale up (~1.15–1.2x) + rotateX (~-12 to -15deg) to tilt card toward viewer
+- Transition on transform and box-shadow (duration ~0.35s, ease-out)
+- Dramatic drop shadow that grows as card lifts
+- Overlay buttons (Play, Add to List, More Info) fade in with opacity transition, slightly delayed after the card starts lifting
 
 ### Modify
-- HeroBanner: when trailer is available, replace the static backdrop `<img>` with a YouTube iframe as background; retain all gradients, overlay text, and buttons on top
-- When auto-rotation advances to a new item, swap the iframe src to the new trailer (or fall back to image if no trailer)
-- Keep fallback behavior: if no trailer key is found for a title, show the backdrop image as before
+- All item card components to use perspective wrapper and transition classes
+- Overlay visibility change from instant show/hide to smooth opacity fade-in (0 → 1) timed with the card lift
 
 ### Remove
-- Nothing removed
+- Abrupt/instant hover state changes on cards
 
 ## Implementation Plan
-1. In `HeroBanner.tsx`, add a `useEffect` that fetches `/movie/{id}/videos` or `/tv/{id}/videos` from TMDB for the current item whenever `current` changes
-2. Parse the response to find the first YouTube video with `type === 'Trailer'` or `type === 'Teaser'`; store the `key` in state (`trailerKey`)
-3. If `trailerKey` is set, render a YouTube iframe as absolute-positioned background: `https://www.youtube.com/embed/{key}?autoplay=1&mute=1&controls=0&loop=1&playlist={key}&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1`
-4. Add a mute/unmute button overlay (bottom-left, near the dots) that toggles `mute=1` vs `mute=0` by changing the iframe src or using YouTube Player API
-5. If no `trailerKey`, fall back to rendering the backdrop `<img>` as before
-6. Keep all existing overlay content (title, meta, overview, buttons, dots) unchanged
+1. Add `perspective` to the card container so rotateX renders in 3D space
+2. On hover: apply `transform: scale(1.18) rotateX(-14deg)` with `transition: transform 0.35s ease-out, box-shadow 0.35s ease-out`
+3. Overlay div transitions from `opacity: 0` to `opacity: 1` with a slight delay (e.g. `transition: opacity 0.25s ease 0.1s`) so buttons fade in just after the lift starts
+4. Add a growing box-shadow for depth reinforcement
+5. Apply consistently to all card components site-wide

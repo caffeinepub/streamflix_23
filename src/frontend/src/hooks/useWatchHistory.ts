@@ -10,6 +10,7 @@ export interface WatchHistoryEntry {
   posterPath: string | null;
   backdropPath: string | null;
   timestamp: number;
+  currentTime?: number;
   season?: number;
   episode?: number;
 }

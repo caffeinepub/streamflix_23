@@ -84,18 +84,18 @@ export default function WatchMoviePage() {
       if (event.origin !== "https://vidrock.net") return;
       const data = event.data;
       if (data?.type === "PLAYER_EVENT") {
-        const { event: eventType } = data.data ?? {};
-        if (eventType === "timeupdate" || eventType === "ended") {
-          if (movie) {
-            stableAdd({
-              id: movie.id,
-              type: "movie",
-              title: movie.title,
-              posterPath: movie.poster_path,
-              backdropPath: movie.backdrop_path,
-              timestamp: Date.now(),
-            });
-          }
+        const { event: eventType, currentTime } = data.data ?? {};
+        if ((eventType === "timeupdate" || eventType === "ended") && movie) {
+          stableAdd({
+            id: movie.id,
+            type: "movie",
+            title: movie.title,
+            posterPath: movie.poster_path,
+            backdropPath: movie.backdrop_path,
+            timestamp: Date.now(),
+            currentTime:
+              typeof currentTime === "number" ? currentTime : undefined,
+          });
         }
       }
     }
@@ -110,18 +110,18 @@ export default function WatchMoviePage() {
       if (!VIDFAST_ORIGINS.includes(event.origin)) return;
       const data = event.data;
       if (data?.type === "PLAYER_EVENT") {
-        const { event: eventType } = data.data ?? {};
-        if (eventType === "timeupdate" || eventType === "ended") {
-          if (movie) {
-            stableAdd({
-              id: movie.id,
-              type: "movie",
-              title: movie.title,
-              posterPath: movie.poster_path,
-              backdropPath: movie.backdrop_path,
-              timestamp: Date.now(),
-            });
-          }
+        const { event: eventType, currentTime } = data.data ?? {};
+        if ((eventType === "timeupdate" || eventType === "ended") && movie) {
+          stableAdd({
+            id: movie.id,
+            type: "movie",
+            title: movie.title,
+            posterPath: movie.poster_path,
+            backdropPath: movie.backdrop_path,
+            timestamp: Date.now(),
+            currentTime:
+              typeof currentTime === "number" ? currentTime : undefined,
+          });
         }
       }
     }

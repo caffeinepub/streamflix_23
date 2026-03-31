@@ -62,7 +62,11 @@ export default function MediaCard({
       className={`cursor-pointer text-left ${
         className ?? "shrink-0 w-32 md:w-40 lg:w-44"
       }`}
-      style={{ position: "relative", zIndex: hovered ? 50 : "auto" }}
+      style={{
+        position: "relative",
+        zIndex: hovered ? 50 : "auto",
+        perspective: "1000px",
+      }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -99,110 +103,122 @@ export default function MediaCard({
         {date && <p className="text-[10px] text-[#555]">{formatYear(date)}</p>}
       </button>
 
-      {/* Netflix-style hover popup */}
-      {hovered && (
-        <div
-          className="absolute inset-x-0 top-0 rounded-lg overflow-hidden shadow-2xl ring-2 ring-white/20"
-          style={{
-            transform: "scale(1.15)",
-            transformOrigin: "center top",
-            zIndex: 100,
-          }}
+      {/* Netflix-style hover popup — always in DOM, driven by hovered state */}
+      <div
+        className="absolute inset-x-0 top-0 rounded-lg overflow-hidden"
+        style={{
+          transformOrigin: "center top",
+          transformStyle: "preserve-3d",
+          zIndex: 100,
+          opacity: hovered ? 1 : 0,
+          transform: hovered
+            ? "scale(1.18) rotateX(-15deg)"
+            : "scale(1) rotateX(0deg)",
+          boxShadow: hovered
+            ? "0 30px 60px rgba(0,0,0,0.8), 0 0 0 2px rgba(255,255,255,0.15)"
+            : "none",
+          transition:
+            "transform 0.35s ease-out, opacity 0.3s ease-out, box-shadow 0.35s ease-out",
+          pointerEvents: hovered ? "auto" : "none",
+        }}
+      >
+        {/* Poster - clicking navigates to detail page */}
+        <button
+          type="button"
+          className="relative w-full aspect-[2/3] block cursor-pointer text-left"
+          onClick={handleClick}
         >
-          {/* Poster - clicking navigates to detail page */}
-          <button
-            type="button"
-            className="relative w-full aspect-[2/3] block cursor-pointer text-left"
-            onClick={handleClick}
-          >
-            {item.poster_path ? (
-              <img
-                src={getPosterUrl(item.poster_path)}
-                alt={title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-[#2B2B2B] flex items-center justify-center">
-                <span className="text-[#555] text-xs text-center px-2">
-                  {title}
-                </span>
-              </div>
-            )}
-
-            {/* Dark gradient overlay on bottom 60% */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-
-            {/* Media type badge */}
-            <div className="absolute top-1.5 left-1.5">
-              <span className="text-[9px] font-bold bg-[#E50914] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
-                {mediaType === "movie" ? "M" : "TV"}
+          {item.poster_path ? (
+            <img
+              src={getPosterUrl(item.poster_path)}
+              alt={title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-[#2B2B2B] flex items-center justify-center">
+              <span className="text-[#555] text-xs text-center px-2">
+                {title}
               </span>
             </div>
+          )}
 
-            {/* Bottom overlay content */}
-            <div className="absolute bottom-0 left-0 right-0 p-2.5">
-              <p className="text-white font-bold text-[11px] truncate leading-tight mb-0.5">
-                {title}
-              </p>
-              <div className="flex items-center gap-1.5 mb-2">
-                {date && (
-                  <span className="text-[#999] text-[9px]">
-                    {formatYear(date)}
-                  </span>
-                )}
-                <div className="flex items-center gap-0.5 text-[#46D369] text-[9px]">
-                  <Star size={8} fill="currentColor" />
-                  <span>{formatRating(item.vote_average)}</span>
-                </div>
-              </div>
+          {/* Dark gradient overlay on bottom 60% */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-              {/* Action buttons */}
-              <div className="flex items-center gap-2">
-                {/* Play button */}
-                <button
-                  type="button"
-                  data-ocid="mediacard.play_button"
-                  onClick={handlePlay}
-                  className="flex items-center justify-center w-7 h-7 rounded-full bg-[#E50914] hover:bg-[#f40612] transition-colors shadow-lg flex-shrink-0"
-                  title={`Play ${title}`}
-                >
-                  <Play size={12} fill="white" className="text-white ml-0.5" />
-                </button>
+          {/* Media type badge */}
+          <div className="absolute top-1.5 left-1.5">
+            <span className="text-[9px] font-bold bg-[#E50914] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
+              {mediaType === "movie" ? "M" : "TV"}
+            </span>
+          </div>
 
-                {/* Add to My List button */}
-                {onToggleWatchlist && (
-                  <button
-                    type="button"
-                    data-ocid="mediacard.toggle"
-                    onClick={handleWatchlist}
-                    className={`flex items-center justify-center w-7 h-7 rounded-full border-2 transition-colors flex-shrink-0 ${
-                      inWatchlist
-                        ? "border-[#46D369] bg-[#46D369]/20 text-[#46D369]"
-                        : "border-white/70 bg-black/30 text-white hover:border-white"
-                    }`}
-                    title={
-                      inWatchlist ? "Remove from My List" : "Add to My List"
-                    }
-                  >
-                    {inWatchlist ? <Check size={12} /> : <Plus size={12} />}
-                  </button>
-                )}
-
-                {/* More Info button */}
-                <button
-                  type="button"
-                  data-ocid="mediacard.secondary_button"
-                  onClick={handleMoreInfo}
-                  className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white/70 bg-black/30 text-white hover:border-white transition-colors flex-shrink-0"
-                  title="More Info"
-                >
-                  <Info size={12} />
-                </button>
+          {/* Bottom overlay content */}
+          <div className="absolute bottom-0 left-0 right-0 p-2.5">
+            <p className="text-white font-bold text-[11px] truncate leading-tight mb-0.5">
+              {title}
+            </p>
+            <div className="flex items-center gap-1.5 mb-2">
+              {date && (
+                <span className="text-[#999] text-[9px]">
+                  {formatYear(date)}
+                </span>
+              )}
+              <div className="flex items-center gap-0.5 text-[#46D369] text-[9px]">
+                <Star size={8} fill="currentColor" />
+                <span>{formatRating(item.vote_average)}</span>
               </div>
             </div>
-          </button>
-        </div>
-      )}
+
+            {/* Action buttons — fade in with slight delay after card starts lifting */}
+            <div
+              className="flex items-center gap-2"
+              style={{
+                opacity: hovered ? 1 : 0,
+                transition: "opacity 0.25s ease 0.15s",
+              }}
+            >
+              {/* Play button */}
+              <button
+                type="button"
+                data-ocid="mediacard.play_button"
+                onClick={handlePlay}
+                className="flex items-center justify-center w-7 h-7 rounded-full bg-[#E50914] hover:bg-[#f40612] transition-colors shadow-lg flex-shrink-0"
+                title={`Play ${title}`}
+              >
+                <Play size={12} fill="white" className="text-white ml-0.5" />
+              </button>
+
+              {/* Add to My List button */}
+              {onToggleWatchlist && (
+                <button
+                  type="button"
+                  data-ocid="mediacard.toggle"
+                  onClick={handleWatchlist}
+                  className={`flex items-center justify-center w-7 h-7 rounded-full border-2 transition-colors flex-shrink-0 ${
+                    inWatchlist
+                      ? "border-[#46D369] bg-[#46D369]/20 text-[#46D369]"
+                      : "border-white/70 bg-black/30 text-white hover:border-white"
+                  }`}
+                  title={inWatchlist ? "Remove from My List" : "Add to My List"}
+                >
+                  {inWatchlist ? <Check size={12} /> : <Plus size={12} />}
+                </button>
+              )}
+
+              {/* More Info button */}
+              <button
+                type="button"
+                data-ocid="mediacard.secondary_button"
+                onClick={handleMoreInfo}
+                className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white/70 bg-black/30 text-white hover:border-white transition-colors flex-shrink-0"
+                title="More Info"
+              >
+                <Info size={12} />
+              </button>
+            </div>
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
