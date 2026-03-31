@@ -109,8 +109,12 @@ export default function MediaCard({
             zIndex: 100,
           }}
         >
-          {/* Poster */}
-          <div className="relative aspect-[2/3]">
+          {/* Poster - clicking navigates to detail page */}
+          <button
+            type="button"
+            className="relative w-full aspect-[2/3] block cursor-pointer text-left"
+            onClick={handleClick}
+          >
             {item.poster_path ? (
               <img
                 src={getPosterUrl(item.poster_path)}
@@ -196,7 +200,7 @@ export default function MediaCard({
                 </button>
               </div>
             </div>
-          </div>
+          </button>
         </div>
       )}
     </div>

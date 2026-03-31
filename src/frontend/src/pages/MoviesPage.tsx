@@ -13,10 +13,17 @@ const SKELETON_KEYS = Array.from(
   (_, i) => `skeleton-movie-${i}`,
 );
 
+const SORT_OPTIONS = [
+  { label: "Popularity", value: "popularity.desc" },
+  { label: "Rating", value: "vote_average.desc" },
+  { label: "Release Date", value: "primary_release_date.desc" },
+];
+
 export default function MoviesPage() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState("popularity.desc");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -28,7 +35,7 @@ export default function MoviesPage() {
     void fetchMovieGenres().then((data) => setGenres(data.genres));
   }, []);
 
-  // Reset and load first page when genre changes
+  // Reset and load first page when genre or sort changes
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -37,8 +44,8 @@ export default function MoviesPage() {
     const load = async () => {
       try {
         const data = selectedGenre
-          ? await fetchMoviesByGenre(selectedGenre, 1)
-          : await fetchPopularMovies(1);
+          ? await fetchMoviesByGenre(selectedGenre, 1, sortBy)
+          : await fetchPopularMovies(1, sortBy);
         if (!cancelled) {
           setMovies(data.results);
           setTotalPages(Math.min(data.total_pages, 100));
@@ -53,7 +60,7 @@ export default function MoviesPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedGenre]);
+  }, [selectedGenre, sortBy]);
 
   // Load next pages
   useEffect(() => {
@@ -63,8 +70,8 @@ export default function MoviesPage() {
     const load = async () => {
       try {
         const data = selectedGenre
-          ? await fetchMoviesByGenre(selectedGenre, page)
-          : await fetchPopularMovies(page);
+          ? await fetchMoviesByGenre(selectedGenre, page, sortBy)
+          : await fetchPopularMovies(page, sortBy);
         if (!cancelled) {
           setMovies((prev) => [...prev, ...data.results]);
           setTotalPages(Math.min(data.total_pages, 100));
@@ -79,7 +86,7 @@ export default function MoviesPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, selectedGenre]);
+  }, [page, selectedGenre, sortBy]);
 
   // Intersection observer for infinite scroll
   const handleObserver = useCallback(
@@ -112,37 +119,61 @@ export default function MoviesPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function handleSortChange(value: string) {
+    setSortBy(value);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <div className="bg-[#0B0B0B] min-h-screen pt-24 px-6 md:px-14 pb-16">
       <h1 className="text-3xl font-bold text-white mb-6">Movies</h1>
 
-      {/* Genre pills */}
-      <div className="flex flex-wrap gap-2 mb-8">
-        <button
-          type="button"
-          onClick={() => selectGenre(null)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-            selectedGenre === null
-              ? "bg-[#E50914] text-white"
-              : "bg-[#2B2B2B] text-[#B3B3B3] hover:bg-[#3A3A3A] hover:text-white"
-          }`}
-        >
-          All
-        </button>
-        {genres.map((g) => (
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        {/* Genre pills */}
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            key={g.id}
-            onClick={() => selectGenre(g.id)}
+            onClick={() => selectGenre(null)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              selectedGenre === g.id
+              selectedGenre === null
                 ? "bg-[#E50914] text-white"
                 : "bg-[#2B2B2B] text-[#B3B3B3] hover:bg-[#3A3A3A] hover:text-white"
             }`}
           >
-            {g.name}
+            All
           </button>
-        ))}
+          {genres.map((g) => (
+            <button
+              type="button"
+              key={g.id}
+              onClick={() => selectGenre(g.id)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedGenre === g.id
+                  ? "bg-[#E50914] text-white"
+                  : "bg-[#2B2B2B] text-[#B3B3B3] hover:bg-[#3A3A3A] hover:text-white"
+              }`}
+            >
+              {g.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Sort dropdown */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[#B3B3B3] text-sm">Sort by</span>
+          <select
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value)}
+            className="bg-[#2B2B2B] text-white text-sm px-3 py-1.5 rounded-full border border-[#3A3A3A] focus:outline-none focus:border-[#E50914] cursor-pointer"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Grid */}

@@ -3,6 +3,7 @@ import type {
   Genre,
   MediaItem,
   Movie,
+  SeasonDetails,
   TMDBResponse,
   TVShow,
   VideosResponse,
@@ -39,6 +40,11 @@ export function getProfileUrl(path: string | null, size = "w185"): string {
   return `${IMAGE_BASE_URL}/${size}${path}`;
 }
 
+export function getStillUrl(path: string | null, size = "w300"): string {
+  if (!path) return "";
+  return `${IMAGE_BASE_URL}/${size}${path}`;
+}
+
 async function tmdbFetch<T>(
   endpoint: string,
   params: Record<string, string | number> = {},
@@ -66,8 +72,12 @@ export async function fetchTrending(
 
 export async function fetchPopularMovies(
   page = 1,
+  sortBy = "popularity.desc",
 ): Promise<TMDBResponse<Movie>> {
-  return tmdbFetch("/movie/popular", { page });
+  if (sortBy === "popularity.desc") {
+    return tmdbFetch("/movie/popular", { page });
+  }
+  return tmdbFetch("/discover/movie", { sort_by: sortBy, page });
 }
 
 export async function fetchTopRatedMovies(
@@ -88,8 +98,14 @@ export async function fetchUpcomingMovies(
   return tmdbFetch("/movie/upcoming", { page });
 }
 
-export async function fetchPopularTV(page = 1): Promise<TMDBResponse<TVShow>> {
-  return tmdbFetch("/tv/popular", { page });
+export async function fetchPopularTV(
+  page = 1,
+  sortBy = "popularity.desc",
+): Promise<TMDBResponse<TVShow>> {
+  if (sortBy === "popularity.desc") {
+    return tmdbFetch("/tv/popular", { page });
+  }
+  return tmdbFetch("/discover/tv", { sort_by: sortBy, page });
 }
 
 export async function fetchTopRatedTV(page = 1): Promise<TMDBResponse<TVShow>> {
@@ -110,10 +126,16 @@ export async function fetchTVDetails(id: number): Promise<TVShow> {
   return tmdbFetch<TVShow>(`/tv/${id}`);
 }
 
+export async function fetchTVExternalIds(
+  id: number,
+): Promise<{ imdb_id: string | null }> {
+  return tmdbFetch<{ imdb_id: string | null }>(`/tv/${id}/external_ids`);
+}
+
 export async function fetchTVSeasonDetails(
   tvId: number,
   seasonNumber: number,
-): Promise<{ episodes: Array<{ episode_number: number }> }> {
+): Promise<SeasonDetails> {
   return tmdbFetch(`/tv/${tvId}/season/${seasonNumber}`);
 }
 
@@ -144,10 +166,11 @@ export async function fetchTVGenres(): Promise<{ genres: Genre[] }> {
 export async function fetchMoviesByGenre(
   genreId: number,
   page = 1,
+  sortBy = "popularity.desc",
 ): Promise<TMDBResponse<Movie>> {
   return tmdbFetch("/discover/movie", {
     with_genres: genreId,
-    sort_by: "popularity.desc",
+    sort_by: sortBy,
     page,
   });
 }
@@ -155,10 +178,11 @@ export async function fetchMoviesByGenre(
 export async function fetchTVByGenre(
   genreId: number,
   page = 1,
+  sortBy = "popularity.desc",
 ): Promise<TMDBResponse<TVShow>> {
   return tmdbFetch("/discover/tv", {
     with_genres: genreId,
-    sort_by: "popularity.desc",
+    sort_by: sortBy,
     page,
   });
 }

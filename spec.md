@@ -1,37 +1,31 @@
 # StreamFlix
 
 ## Current State
-- Streaming is exclusively via VidKing API (`https://www.vidking.net/embed/movie/{id}` and `https://www.vidking.net/embed/tv/{id}/{season}/{episode}`)
-- WatchMoviePage and WatchTVPage render a fullscreen iframe with VidKing URL
-- ProfilePage has user info, My List, and Continue Watching sections
-- No user preference for streaming provider exists
+MovieDetailPage and TVDetailPage show TMDB vote_average with a green star badge. MediaCard hover overlay shows vote_average with a green star. Movie and TVShow types don't include `imdb_id`. There's no IMDB API integration.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `useStreamingProvider` hook: reads/writes streaming provider preference (`'vidking' | 'videasy'`) to localStorage; syncs to Firestore for logged-in users under `users/{uid}/preferences/streaming`
-- Streaming provider selector in ProfilePage (below profile header, above My List): two styled toggle buttons "VidKing" and "Videasy" with a brief description; selecting one saves preference and updates the app immediately
-- Videasy embed URLs:
-  - Movie: `https://player.videasy.net/movie/{id}`
-  - TV: `https://player.videasy.net/tv/{id}/{season}/{episode}`
-- WatchMoviePage: switch iframe src based on current provider preference
-- WatchTVPage (Videasy mode): custom Netflix-style overlays built in our app:
-  - **Top overlay**: Back button + show title + S##E## label + Episode Selector toggle button (same as current)
-  - **Next Episode button**: floating button bottom-right, shows when not on last episode of season; clicking navigates to next episode
-  - **Autoplay next episode**: 10-second countdown overlay at bottom when near episode end (simulate with a visible "Next Episode in Xs" bar that auto-navigates); togglable via a setting in the overlay
-  - **Episode selector overlay**: same as current VidKing mode (season + episode dropdowns)
-- WatchTVPage (VidKing mode): no changes to existing behavior
+- `imdb_id` field to Movie type (returned by TMDB movie details)
+- Utility function `fetchIMDBRating(imdbId: string)` calling `https://api.imdbapi.dev/titles/{imdbId}` returning `{ aggregateRating: { ratingValue, voteCount } }`
+- Function `fetchTVExternalIds(tvId: number)` to get IMDB ID for TV shows from TMDB `/tv/{id}/external_ids`
+- IMDB rating badge (yellow star, "IMDb" label) on MovieDetailPage and TVDetailPage — shown next to existing TMDB rating
+- IMDB rating on MediaCard hover overlay — shown next to the green TMDB rating
 
 ### Modify
-- WatchMoviePage: conditionally use Videasy or VidKing src based on provider preference
-- WatchTVPage: conditionally render Videasy-enhanced overlay controls or VidKing controls
-- ProfilePage: add streaming provider toggle section
+- `types.ts`: add `imdb_id?: string` to Movie interface
+- `tmdb.ts`: add `fetchTVExternalIds` function
+- `MovieDetailPage.tsx`: fetch IMDB rating after movie details load (using `movie.imdb_id`); display yellow IMDb star badge in the meta row
+- `TVDetailPage.tsx`: fetch TV external IDs to get IMDB ID, then fetch IMDB rating; display yellow IMDb badge
+- `MediaCard.tsx`: accept optional `imdbRating` prop and display it in the hover overlay
 
 ### Remove
 - Nothing removed
 
 ## Implementation Plan
-1. Create `src/hooks/useStreamingProvider.ts` — localStorage + Firestore sync for `'vidking' | 'videasy'` preference
-2. Update `ProfilePage.tsx` — add streaming provider toggle UI section with two buttons
-3. Update `WatchMoviePage.tsx` — use `useStreamingProvider` to switch iframe src
-4. Update `WatchTVPage.tsx` — use `useStreamingProvider`; when Videasy: add Next Episode button, autoplay countdown overlay, keep episode selector; when VidKing: unchanged
+1. Add `imdb_id?: string` to Movie interface in types.ts
+2. Add `fetchTVExternalIds(tvId)` to tmdb.ts returning `{ imdb_id: string | null }`
+3. Create `src/frontend/src/lib/imdb.ts` with `fetchIMDBRating(imdbId)` that calls `https://api.imdbapi.dev/titles/{imdbId}` and returns rating value and vote count (handle errors gracefully, return null on failure)
+4. Update MovieDetailPage to fetch IMDB rating using `movie.imdb_id`, store in state, display yellow IMDb badge in meta row
+5. Update TVDetailPage to call `fetchTVExternalIds`, then fetch IMDB rating, display yellow IMDb badge
+6. MediaCard hover overlay: the card doesn't have IMDB data at list level (too expensive to fetch per card), so skip IMDB rating on card hover — only show it on detail pages

@@ -10,6 +10,8 @@ import {
   formatRuntime,
   truncate,
 } from "../lib/helpers";
+import { fetchIMDBRating } from "../lib/imdb";
+import type { IMDBRating } from "../lib/imdb";
 import { enterPlayerMode } from "../lib/playerUtils";
 import {
   fetchMovieCredits,
@@ -31,6 +33,7 @@ export default function MovieDetailPage() {
   const [similar, setSimilar] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTrailer, setActiveTrailer] = useState<Video | null>(null);
+  const [imdbRating, setImdbRating] = useState<IMDBRating | null>(null);
   const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
 
   const movieId = Number.parseInt(id, 10);
@@ -41,6 +44,7 @@ export default function MovieDetailPage() {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setImdbRating(null);
       try {
         const [m, c, v, s] = await Promise.all([
           fetchMovieDetails(movieId),
@@ -58,6 +62,13 @@ export default function MovieDetailPage() {
           );
           setVideos(trailers);
           setSimilar(s.results.slice(0, 12));
+
+          // Non-blocking IMDB fetch
+          if (m.imdb_id) {
+            fetchIMDBRating(m.imdb_id).then((rating) => {
+              if (!cancelled) setImdbRating(rating);
+            });
+          }
         }
       } catch (err) {
         console.error(err);
@@ -145,6 +156,20 @@ export default function MovieDetailPage() {
                   ({movie.vote_count.toLocaleString()})
                 </span>
               </div>
+              {imdbRating && (
+                <div className="flex items-center gap-1.5 font-semibold">
+                  <span className="bg-[#F5C518] text-black font-black text-[10px] px-1.5 py-0.5 rounded leading-none">
+                    IMDb
+                  </span>
+                  <Star size={14} fill="#F5C518" className="text-[#F5C518]" />
+                  <span className="text-white text-sm">
+                    {imdbRating.value.toFixed(1)}
+                  </span>
+                  <span className="text-[#555] text-xs">
+                    ({imdbRating.voteCount.toLocaleString()})
+                  </span>
+                </div>
+              )}
               {movie.release_date && (
                 <span className="text-[#B3B3B3] text-sm">
                   {formatDate(movie.release_date)}

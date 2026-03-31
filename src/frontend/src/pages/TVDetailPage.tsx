@@ -3,19 +3,31 @@ import { ArrowLeft, Check, Play, Plus, Star, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
 import ContentRow from "../components/ContentRow";
 import TrailerModal from "../components/TrailerModal";
+import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
 import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import { formatDate, formatRating, truncate } from "../lib/helpers";
+import { fetchIMDBRating } from "../lib/imdb";
+import type { IMDBRating } from "../lib/imdb";
 import { enterPlayerMode } from "../lib/playerUtils";
 import {
   fetchSimilarTV,
   fetchTVCredits,
   fetchTVDetails,
+  fetchTVExternalIds,
+  fetchTVSeasonDetails,
   fetchTVVideos,
   getBackdropUrl,
   getPosterUrl,
   getProfileUrl,
+  getStillUrl,
 } from "../lib/tmdb";
-import type { CastMember, MediaItem, TVShow, Video } from "../lib/types";
+import type {
+  CastMember,
+  Episode,
+  MediaItem,
+  TVShow,
+  Video,
+} from "../lib/types";
 
 export default function TVDetailPage() {
   const { id } = useParams({ strict: false }) as { id: string };
@@ -26,16 +38,29 @@ export default function TVDetailPage() {
   const [similar, setSimilar] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTrailer, setActiveTrailer] = useState<Video | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<number>(1);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
+  const [imdbRating, setImdbRating] = useState<IMDBRating | null>(null);
   const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
+  const { history } = useFirestoreWatchHistory();
 
   const showId = Number.parseInt(id, 10);
   const inWatchlist = watchlistIds.has(showId);
+  const lastWatched = history.find((e) => e.type === "tv" && e.id === showId);
+
+  useEffect(() => {
+    if (lastWatched?.season) {
+      setSelectedSeason(lastWatched.season);
+    }
+  }, [lastWatched?.season]);
 
   useEffect(() => {
     if (!showId) return;
     let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setImdbRating(null);
       try {
         const [s, c, v, sim] = await Promise.all([
           fetchTVDetails(showId),
@@ -57,6 +82,19 @@ export default function TVDetailPage() {
           );
           setVideos(trailers);
           setSimilar(sim.results.slice(0, 12));
+
+          // Non-blocking IMDB fetch (chained: external IDs -> IMDB rating)
+          fetchTVExternalIds(showId)
+            .then((ext) => {
+              if (!cancelled && ext.imdb_id) {
+                return fetchIMDBRating(ext.imdb_id);
+              }
+              return null;
+            })
+            .then((rating) => {
+              if (!cancelled) setImdbRating(rating);
+            })
+            .catch(() => {});
         }
       } catch (err) {
         console.error(err);
@@ -69,6 +107,27 @@ export default function TVDetailPage() {
       cancelled = true;
     };
   }, [showId]);
+
+  useEffect(() => {
+    if (!showId) return;
+    let cancelled = false;
+    const load = async () => {
+      setEpisodesLoading(true);
+      try {
+        const data = await fetchTVSeasonDetails(showId, selectedSeason);
+        if (!cancelled) setEpisodes(data.episodes ?? []);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setEpisodes([]);
+      } finally {
+        if (!cancelled) setEpisodesLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [showId, selectedSeason]);
 
   if (loading) {
     return (
@@ -88,6 +147,25 @@ export default function TVDetailPage() {
 
   const trailer = videos[0] ?? null;
   const backdropUrl = getBackdropUrl(show.backdrop_path, "original");
+  const numSeasons = show.number_of_seasons ?? 1;
+
+  const handlePlay = async () => {
+    await enterPlayerMode();
+    const season = lastWatched?.season ?? 1;
+    const episode = lastWatched?.episode ?? 1;
+    navigate({
+      to: "/watch/tv/$id/$season/$episode",
+      params: { id, season: String(season), episode: String(episode) },
+    });
+  };
+
+  const handleEpisodeClick = async (epNum: number) => {
+    await enterPlayerMode();
+    navigate({
+      to: "/watch/tv/$id/$season/$episode",
+      params: { id, season: String(selectedSeason), episode: String(epNum) },
+    });
+  };
 
   return (
     <div className="bg-[#0B0B0B] min-h-screen">
@@ -135,7 +213,6 @@ export default function TVDetailPage() {
               </p>
             )}
 
-            {/* Meta row */}
             <div className="flex flex-wrap items-center gap-4 mb-5">
               <div className="flex items-center gap-1 text-[#46D369] font-semibold">
                 <Star size={16} fill="currentColor" />
@@ -144,6 +221,20 @@ export default function TVDetailPage() {
                   ({show.vote_count.toLocaleString()})
                 </span>
               </div>
+              {imdbRating && (
+                <div className="flex items-center gap-1.5 font-semibold">
+                  <span className="bg-[#F5C518] text-black font-black text-[10px] px-1.5 py-0.5 rounded leading-none">
+                    IMDb
+                  </span>
+                  <Star size={14} fill="#F5C518" className="text-[#F5C518]" />
+                  <span className="text-white text-sm">
+                    {imdbRating.value.toFixed(1)}
+                  </span>
+                  <span className="text-[#555] text-xs">
+                    ({imdbRating.voteCount.toLocaleString()})
+                  </span>
+                </div>
+              )}
               {show.first_air_date && (
                 <span className="text-[#B3B3B3] text-sm">
                   {formatDate(show.first_air_date)}
@@ -165,7 +256,6 @@ export default function TVDetailPage() {
               )}
             </div>
 
-            {/* Genres */}
             {show.genres && show.genres.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {show.genres.map((g) => (
@@ -179,27 +269,19 @@ export default function TVDetailPage() {
               </div>
             )}
 
-            {/* Overview */}
             <p className="text-[#B3B3B3] text-sm md:text-base leading-relaxed mb-6">
               {show.overview}
             </p>
 
-            {/* Action buttons */}
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 data-ocid="tv.primary_button"
-                onClick={async () => {
-                  await enterPlayerMode();
-                  navigate({
-                    to: "/watch/tv/$id/$season/$episode",
-                    params: { id, season: "1", episode: "1" },
-                  });
-                }}
+                onClick={handlePlay}
                 className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
               >
                 <Play size={18} fill="currentColor" />
-                Play
+                {lastWatched ? "Resume" : "Play"}
               </button>
               {trailer && (
                 <button
@@ -227,6 +309,134 @@ export default function TVDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Episodes Section */}
+        <div className="mt-12" data-ocid="tv.panel">
+          <h2 className="text-white font-bold text-xl mb-5">Episodes</h2>
+
+          {/* Season tabs */}
+          <div
+            className="flex gap-1 overflow-x-auto pb-1 mb-6 border-b border-[#2B2B2B]"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {Array.from({ length: numSeasons }, (_, i) => i + 1).map((s) => (
+              <button
+                type="button"
+                key={s}
+                data-ocid="tv.tab"
+                onClick={() => setSelectedSeason(s)}
+                className={`shrink-0 px-4 py-2 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                  selectedSeason === s
+                    ? "text-white border-white"
+                    : "text-[#777] border-transparent hover:text-[#B3B3B3]"
+                }`}
+              >
+                Season {s}
+              </button>
+            ))}
+          </div>
+
+          {/* Episode list */}
+          {episodesLoading ? (
+            <div className="space-y-3" data-ocid="tv.loading_state">
+              {["s1", "s2", "s3", "s4", "s5"].map((sk) => (
+                <div
+                  key={sk}
+                  className="flex gap-4 bg-[#1A1A1A] rounded-lg p-3 animate-pulse"
+                >
+                  <div className="shrink-0 w-[160px] aspect-video rounded-md bg-[#2B2B2B]" />
+                  <div className="flex-1 space-y-2 py-1">
+                    <div className="h-4 bg-[#2B2B2B] rounded w-3/4" />
+                    <div className="h-3 bg-[#2B2B2B] rounded w-full" />
+                    <div className="h-3 bg-[#2B2B2B] rounded w-5/6" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {episodes.map((ep, idx) => {
+                const isLastWatched =
+                  lastWatched?.season === selectedSeason &&
+                  lastWatched?.episode === ep.episode_number;
+                const stillUrl = getStillUrl(ep.still_path, "w300");
+
+                const progressState =
+                  lastWatched?.season === selectedSeason
+                    ? ep.episode_number < (lastWatched?.episode ?? 0)
+                      ? "watched"
+                      : ep.episode_number === lastWatched?.episode
+                        ? "inProgress"
+                        : "unwatched"
+                    : "unwatched";
+
+                return (
+                  <button
+                    type="button"
+                    key={ep.id}
+                    data-ocid={`tv.item.${idx + 1}`}
+                    onClick={() => handleEpisodeClick(ep.episode_number)}
+                    className={`w-full flex gap-4 rounded-lg p-3 text-left transition-colors group ${
+                      isLastWatched
+                        ? "bg-[#1F1010] border-l-4 border-[#E50914] hover:bg-[#2B1515]"
+                        : "bg-[#1A1A1A] border-l-4 border-transparent hover:bg-[#2B2B2B]"
+                    }`}
+                  >
+                    <div className="shrink-0 w-[120px] md:w-[160px] aspect-video rounded-md overflow-hidden bg-[#2B2B2B] relative">
+                      {stillUrl ? (
+                        <img
+                          src={stillUrl}
+                          alt={ep.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Play size={28} className="text-[#555]" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
+                          <Play size={18} fill="white" className="text-white" />
+                        </div>
+                      </div>
+                      {progressState !== "unwatched" && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                          <div
+                            className={`h-full rounded-sm ${
+                              progressState === "inProgress"
+                                ? "bg-[#E50914]"
+                                : "bg-[#6B6B6B]"
+                            }`}
+                            style={{
+                              width:
+                                progressState === "inProgress" ? "65%" : "100%",
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className="text-white font-bold text-sm leading-snug">
+                          E{ep.episode_number} — {ep.name}
+                        </span>
+                        {ep.runtime ? (
+                          <span className="shrink-0 text-[#777] text-xs mt-0.5">
+                            {ep.runtime}m
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="text-[#777] text-xs leading-relaxed line-clamp-3">
+                        {ep.overview || "No description available."}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Cast */}
@@ -311,7 +521,6 @@ export default function TVDetailPage() {
         )}
       </div>
 
-      {/* Trailer modal */}
       {activeTrailer && (
         <TrailerModal
           video={activeTrailer}

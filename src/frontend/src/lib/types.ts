@@ -16,6 +16,7 @@ export interface Movie {
   revenue?: number;
   media_type?: "movie";
   popularity?: number;
+  imdb_id?: string;
 }
 
 export interface TVShow {
@@ -86,6 +87,23 @@ export interface TMDBResponse<T> {
   results: T[];
   total_pages: number;
   total_results: number;
+}
+
+export interface Episode {
+  id: number;
+  episode_number: number;
+  name: string;
+  overview: string;
+  still_path: string | null;
+  runtime: number | null;
+  air_date: string | null;
+  vote_average: number;
+}
+
+export interface SeasonDetails {
+  id: number;
+  season_number: number;
+  episodes: Episode[];
 }
 
 export function isMovie(item: MediaItem): item is Movie {
