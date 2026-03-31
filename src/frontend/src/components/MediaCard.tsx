@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Check, Info, Play, Plus, Star } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { formatRating, formatYear } from "../lib/helpers";
 import { getPosterUrl } from "../lib/tmdb";
 import { type MediaItem, getDate, getTitle, isMovie } from "../lib/types";
@@ -19,10 +19,29 @@ export default function MediaCard({
   className,
 }: MediaCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const title = getTitle(item);
   const date = getDate(item);
   const mediaType = isMovie(item) ? "movie" : "tv";
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) / (rect.width / 2); // -1 to 1
+    const dy = (e.clientY - cy) / (rect.height / 2); // -1 to 1
+    setTilt({ x: dy * -22, y: dx * 22 }); // rotateX inverted so cursor side lifts
+  }, []);
+
+  const handleMouseEnter = useCallback(() => setHovered(true), []);
+  const handleMouseLeave = useCallback(() => {
+    setHovered(false);
+    setTilt({ x: 0, y: 0 });
+  }, []);
 
   function handleClick() {
     if (mediaType === "movie") {
@@ -57,18 +76,24 @@ export default function MediaCard({
     handleClick();
   }
 
+  const hoverTransform = hovered
+    ? `scale(1.18) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`
+    : "scale(1) rotateX(0deg) rotateY(0deg)";
+
   return (
     <div
+      ref={cardRef}
       className={`cursor-pointer text-left ${
         className ?? "shrink-0 w-32 md:w-40 lg:w-44"
       }`}
       style={{
         position: "relative",
         zIndex: hovered ? 50 : "auto",
-        perspective: "1000px",
+        perspective: "800px",
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
     >
       {/* Base card */}
       <button
@@ -103,22 +128,21 @@ export default function MediaCard({
         {date && <p className="text-[10px] text-[#555]">{formatYear(date)}</p>}
       </button>
 
-      {/* Netflix-style hover popup — always in DOM, driven by hovered state */}
+      {/* Netflix-style hover popup with cursor-tracking tilt */}
       <div
         className="absolute inset-x-0 top-0 rounded-lg overflow-hidden"
         style={{
-          transformOrigin: "center top",
+          transformOrigin: "center center",
           transformStyle: "preserve-3d",
           zIndex: 100,
           opacity: hovered ? 1 : 0,
-          transform: hovered
-            ? "scale(1.18) rotateX(-15deg)"
-            : "scale(1) rotateX(0deg)",
+          transform: hoverTransform,
           boxShadow: hovered
-            ? "0 30px 60px rgba(0,0,0,0.8), 0 0 0 2px rgba(255,255,255,0.15)"
+            ? "0 30px 60px rgba(0,0,0,0.85), 0 0 0 2px rgba(255,255,255,0.15)"
             : "none",
-          transition:
-            "transform 0.35s ease-out, opacity 0.3s ease-out, box-shadow 0.35s ease-out",
+          transition: hovered
+            ? "transform 0.08s linear, opacity 0.3s ease-out, box-shadow 0.35s ease-out"
+            : "transform 0.4s ease-out, opacity 0.3s ease-out, box-shadow 0.35s ease-out",
           pointerEvents: hovered ? "auto" : "none",
         }}
       >
