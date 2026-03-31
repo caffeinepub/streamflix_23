@@ -1,5 +1,14 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowLeft, Check, Clock, Play, Plus, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Clock,
+  Play,
+  Plus,
+  Star,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import ContentRow from "../components/ContentRow";
 import TrailerModal from "../components/TrailerModal";
@@ -34,6 +43,7 @@ export default function MovieDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTrailer, setActiveTrailer] = useState<Video | null>(null);
   const [imdbRating, setImdbRating] = useState<IMDBRating | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
   const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
 
   const movieId = Number.parseInt(id, 10);
@@ -45,6 +55,7 @@ export default function MovieDetailPage() {
     const load = async () => {
       setLoading(true);
       setImdbRating(null);
+      setIsMuted(true);
       try {
         const [m, c, v, s] = await Promise.all([
           fetchMovieDetails(movieId),
@@ -100,6 +111,9 @@ export default function MovieDetailPage() {
 
   const trailer = videos[0] ?? null;
   const backdropUrl = getBackdropUrl(movie.backdrop_path, "original");
+  const trailerSrc = trailer
+    ? `https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${trailer.key}&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&enablejsapi=0`
+    : null;
 
   return (
     <div className="bg-[#0B0B0B] min-h-screen">
@@ -112,6 +126,24 @@ export default function MovieDetailPage() {
             className="w-full h-full object-cover object-top"
           />
         )}
+        {trailerSrc && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <iframe
+              key={`${trailer!.key}-${isMuted ? 1 : 0}`}
+              src={trailerSrc}
+              allow="autoplay"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{
+                width: "177.78vh",
+                height: "56.25vw",
+                minWidth: "100%",
+                minHeight: "100%",
+                border: "none",
+              }}
+              title="trailer"
+            />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B0B0B44] to-[#0B0B0B]" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0B0B0B] to-transparent" />
         <button
@@ -122,6 +154,15 @@ export default function MovieDetailPage() {
           <ArrowLeft size={20} />
           <span className="text-sm">Back</span>
         </button>
+        {trailer && (
+          <button
+            type="button"
+            onClick={() => setIsMuted((m) => !m)}
+            className="absolute bottom-6 right-6 md:right-14 w-9 h-9 rounded-full bg-[#1a1a1acc] border border-[#555] flex items-center justify-center text-white hover:bg-[#2a2a2a] transition-colors backdrop-blur-sm"
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+        )}
       </div>
 
       {/* Content */}
