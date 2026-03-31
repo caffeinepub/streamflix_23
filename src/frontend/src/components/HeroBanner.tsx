@@ -43,6 +43,20 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     }
   }
 
+  function goToWatch() {
+    if (isMovie(item)) {
+      void navigate({
+        to: "/watch/movie/$id",
+        params: { id: String(item.id) },
+      });
+    } else {
+      void navigate({
+        to: "/watch/tv/$id/$season/$episode",
+        params: { id: String(item.id), season: "1", episode: "1" },
+      });
+    }
+  }
+
   return (
     <div className="relative w-full h-[80vh] min-h-[520px] overflow-hidden">
       {/* Backdrop image */}
@@ -97,7 +111,8 @@ export default function HeroBanner({ items }: HeroBannerProps) {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={goToDetail}
+                data-ocid="hero.primary_button"
+                onClick={goToWatch}
                 className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
               >
                 <Play size={18} fill="currentColor" />
@@ -105,6 +120,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
               </button>
               <button
                 type="button"
+                data-ocid="hero.secondary_button"
                 onClick={goToDetail}
                 className="flex items-center gap-2 bg-[#2B2B2Bcc] text-white font-semibold px-6 py-3 rounded-lg hover:bg-[#3A3A3A] border border-[#555] transition-colors text-sm backdrop-blur-sm"
               >

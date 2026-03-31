@@ -110,6 +110,13 @@ export async function fetchTVDetails(id: number): Promise<TVShow> {
   return tmdbFetch<TVShow>(`/tv/${id}`);
 }
 
+export async function fetchTVSeasonDetails(
+  tvId: number,
+  seasonNumber: number,
+): Promise<{ episodes: Array<{ episode_number: number }> }> {
+  return tmdbFetch(`/tv/${tvId}/season/${seasonNumber}`);
+}
+
 export async function fetchMovieCredits(id: number): Promise<CreditsResponse> {
   return tmdbFetch<CreditsResponse>(`/movie/${id}/credits`);
 }

@@ -197,19 +197,32 @@ export default function MovieDetailPage() {
             </p>
 
             {/* Action buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                data-ocid="movie.primary_button"
+                onClick={() =>
+                  navigate({ to: "/watch/movie/$id", params: { id } })
+                }
+                className="flex items-center gap-2 bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-[#e0e0e0] transition-colors text-sm"
+              >
+                <Play size={18} fill="currentColor" />
+                Play
+              </button>
               {trailer && (
                 <button
                   type="button"
+                  data-ocid="movie.secondary_button"
                   onClick={() => setActiveTrailer(trailer)}
-                  className="flex items-center gap-2 bg-[#E50914] hover:bg-[#c50813] text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm"
+                  className="flex items-center gap-2 bg-[#2B2B2B] hover:bg-[#3A3A3A] text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm border border-[#3A3A3A]"
                 >
                   <Play size={18} fill="currentColor" />
-                  Play Trailer
+                  Trailer
                 </button>
               )}
               <button
                 type="button"
+                data-ocid="movie.toggle"
                 onClick={toggleWatchlist}
                 className={`flex items-center gap-2 font-semibold px-6 py-3 rounded-lg transition-colors text-sm border ${
                   inWatchlist

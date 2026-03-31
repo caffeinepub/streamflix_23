@@ -16,6 +16,8 @@ import MoviesPage from "./pages/MoviesPage";
 import SearchPage from "./pages/SearchPage";
 import TVDetailPage from "./pages/TVDetailPage";
 import TVPage from "./pages/TVPage";
+import WatchMoviePage from "./pages/WatchMoviePage";
+import WatchTVPage from "./pages/WatchTVPage";
 
 function RootLayout() {
   return (
@@ -67,6 +69,18 @@ const tvDetailRoute = createRoute({
   component: TVDetailPage,
 });
 
+const watchMovieRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/watch/movie/$id",
+  component: WatchMoviePage,
+});
+
+const watchTVRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/watch/tv/$id/$season/$episode",
+  component: WatchTVPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   moviesRoute,
@@ -74,6 +88,8 @@ const routeTree = rootRoute.addChildren([
   searchRoute,
   movieDetailRoute,
   tvDetailRoute,
+  watchMovieRoute,
+  watchTVRoute,
 ]);
 
 const router = createRouter({ routeTree });
