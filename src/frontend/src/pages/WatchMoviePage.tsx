@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { useWatchHistory } from "../hooks/useWatchHistory";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
 import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchMovieDetails } from "../lib/tmdb";
 import type { Movie } from "../lib/types";
@@ -11,11 +11,26 @@ export default function WatchMoviePage() {
   const navigate = useNavigate();
   const [movie, setMovie] = useState<Movie | null>(null);
   const [loading, setLoading] = useState(true);
-  const { addToHistory } = useWatchHistory();
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const { addToHistory } = useFirestoreWatchHistory();
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const movieId = Number.parseInt(id, 10);
 
   const stableAdd = useCallback(addToHistory, []);
+
+  const resetTimer = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setControlsVisible(false), 3000);
+  }, []);
+
+  useEffect(() => {
+    resetTimer();
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, [resetTimer]);
 
   useEffect(() => {
     void enterPlayerMode();
@@ -51,51 +66,78 @@ export default function WatchMoviePage() {
   }, [movieId, stableAdd]);
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-black/80 backdrop-blur-sm border-b border-white/10">
-        <button
-          type="button"
-          data-ocid="watch.back.button"
-          onClick={async () => {
-            await exitPlayerMode();
-            navigate({ to: "/movie/$id", params: { id } });
-          }}
-          className="flex items-center gap-2 text-[#B3B3B3] hover:text-white transition-colors"
-        >
-          <ArrowLeft size={20} />
-          <span className="text-sm">Back</span>
-        </button>
-        <div className="flex-1">
-          {loading ? (
-            <div className="h-5 w-48 bg-[#2B2B2B] rounded animate-pulse" />
-          ) : (
-            <h1 className="text-white font-bold text-base md:text-lg truncate">
-              {movie?.title ?? "Movie"}
-            </h1>
-          )}
+    // biome-ignore lint/a11y/useKeyWithClickEvents: click is for activity detection only
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "#000",
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+      }}
+      onMouseMove={resetTimer}
+      onTouchStart={resetTimer}
+      onClick={resetTimer}
+    >
+      {/* Overlay header */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%)",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+          opacity: controlsVisible ? 1 : 0,
+          transition: "opacity 0.4s",
+          pointerEvents: controlsVisible ? "auto" : "none",
+        }}
+      >
+        <div className="flex items-center gap-4 px-4 py-3">
+          <button
+            type="button"
+            data-ocid="watch.back.button"
+            onClick={async () => {
+              await exitPlayerMode();
+              navigate({ to: "/movie/$id", params: { id } });
+            }}
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+          >
+            <ArrowLeft size={22} />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <div className="flex-1 min-w-0">
+            {loading ? (
+              <div className="h-4 w-40 bg-white/20 rounded animate-pulse" />
+            ) : (
+              <h1 className="text-white font-bold text-sm md:text-base truncate drop-shadow">
+                {movie?.title ?? "Movie"}
+              </h1>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Player */}
-      <div
-        className="flex-1 flex items-center justify-center bg-black p-0"
-        style={{ minHeight: 0 }}
+      {/* Fullscreen iframe */}
+      <iframe
+        src={`https://www.vidking.net/embed/movie/${movieId}`}
+        title={movie?.title ?? "Movie Player"}
         data-ocid="watch.canvas_target"
-      >
-        <iframe
-          src={`https://www.vidking.net/embed/movie/${movieId}`}
-          title={movie?.title ?? "Movie Player"}
-          width="100%"
-          style={{
-            height: "80vh",
-            border: "none",
-            display: "block",
-          }}
-          allowFullScreen
-          allow="autoplay; fullscreen"
-        />
-      </div>
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          display: "block",
+          flex: 1,
+        }}
+        allowFullScreen
+        allow="autoplay; fullscreen"
+      />
     </div>
   );
 }

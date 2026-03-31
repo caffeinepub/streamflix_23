@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
 import { useRef } from "react";
-import { useWatchHistory } from "../hooks/useWatchHistory";
+import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
 
 const IMG_BACKDROP = "https://image.tmdb.org/t/p/w500";
 const IMG_POSTER = "https://image.tmdb.org/t/p/w342";
@@ -20,7 +20,7 @@ function timeAgo(ts: number): string {
 }
 
 export default function ContinueWatchingRow() {
-  const { history, removeFromHistory } = useWatchHistory();
+  const { history, removeFromHistory } = useFirestoreWatchHistory();
   const navigate = useNavigate();
   const rowRef = useRef<HTMLDivElement>(null);
 

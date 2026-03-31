@@ -6,11 +6,14 @@ import {
   createRouter,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useState } from "react";
 import ApiKeySetup from "./components/ApiKeySetup";
 import BottomNav from "./components/BottomNav";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
+import SignInModal from "./components/SignInModal";
+import { AuthProvider } from "./contexts/AuthContext";
 import { hasApiKey } from "./lib/tmdb";
 import ContinueWatchingPage from "./pages/ContinueWatchingPage";
 import HomePage from "./pages/HomePage";
@@ -38,13 +41,17 @@ function ScrollToTop() {
 }
 
 function RootLayout() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isWatchPage = pathname.startsWith("/watch");
+
   return (
-    <div className="bg-[#0B0B0B] min-h-screen pb-14">
+    <div className={`bg-[#0B0B0B] min-h-screen${isWatchPage ? "" : " pb-14"}`}>
       <ScrollToTop />
-      <Navbar />
+      {!isWatchPage && <Navbar />}
       <Outlet />
-      <Footer />
-      <BottomNav />
+      {!isWatchPage && <Footer />}
+      {!isWatchPage && <BottomNav />}
+      <SignInModal />
     </div>
   );
 }
@@ -145,5 +152,9 @@ export default function App() {
     return <ApiKeySetup onSaved={() => setApiKeyReady(true)} />;
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }

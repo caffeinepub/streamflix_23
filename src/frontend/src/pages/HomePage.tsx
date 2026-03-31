@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { ItemType } from "../backend";
 import ContentRow from "../components/ContentRow";
 import ContinueWatchingRow from "../components/ContinueWatchingRow";
 import HeroBanner from "../components/HeroBanner";
-import { useActor } from "../hooks/useActor";
+import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import {
   fetchAiringTodayTV,
   fetchNowPlayingMovies,
@@ -22,8 +21,7 @@ export default function HomePage() {
   const [upcoming, setUpcoming] = useState<Movie[]>([]);
   const [airingToday, setAiringToday] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
-  const { actor } = useActor();
+  const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
 
   useEffect(() => {
     let cancelled = false;
@@ -57,19 +55,9 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!actor) return;
-    void actor.getWatchlist().then((list) => {
-      setWatchlistIds(new Set(list.map((i) => Number(i.id))));
-    });
-  }, [actor]);
-
-  async function handleToggleWatchlist(item: MediaItem) {
-    if (!actor) return;
-    const mediaType = "title" in item ? ItemType.movie : ItemType.tv;
-    await actor.toggleItem(BigInt(item.id), mediaType);
-    const list = await actor.getWatchlist();
-    setWatchlistIds(new Set(list.map((i) => Number(i.id))));
+  function handleToggleWatchlist(item: MediaItem) {
+    const type = "title" in item ? "movie" : "tv";
+    toggleWatchlist(item.id, type);
   }
 
   const toMediaItems = <T extends MediaItem>(arr: T[]): MediaItem[] => arr;

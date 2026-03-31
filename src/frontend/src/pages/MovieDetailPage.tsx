@@ -1,10 +1,9 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Check, Clock, Play, Plus, Star } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ItemType } from "../backend";
 import ContentRow from "../components/ContentRow";
 import TrailerModal from "../components/TrailerModal";
-import { useActor } from "../hooks/useActor";
+import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import {
   formatDate,
   formatRating,
@@ -32,10 +31,10 @@ export default function MovieDetailPage() {
   const [similar, setSimilar] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTrailer, setActiveTrailer] = useState<Video | null>(null);
-  const [inWatchlist, setInWatchlist] = useState(false);
-  const { actor } = useActor();
+  const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
 
   const movieId = Number.parseInt(id, 10);
+  const inWatchlist = watchlistIds.has(movieId);
 
   useEffect(() => {
     if (!movieId) return;
@@ -71,20 +70,6 @@ export default function MovieDetailPage() {
       cancelled = true;
     };
   }, [movieId]);
-
-  useEffect(() => {
-    if (!actor || !movieId) return;
-    void actor.getWatchlist().then((list) => {
-      setInWatchlist(list.some((i) => Number(i.id) === movieId));
-    });
-  }, [actor, movieId]);
-
-  async function toggleWatchlist() {
-    if (!actor) return;
-    await actor.toggleItem(BigInt(movieId), ItemType.movie);
-    const list = await actor.getWatchlist();
-    setInWatchlist(list.some((i) => Number(i.id) === movieId));
-  }
 
   if (loading) {
     return (
@@ -225,7 +210,7 @@ export default function MovieDetailPage() {
               <button
                 type="button"
                 data-ocid="movie.toggle"
-                onClick={toggleWatchlist}
+                onClick={() => toggleWatchlist(movieId, "movie")}
                 className={`flex items-center gap-2 font-semibold px-6 py-3 rounded-lg transition-colors text-sm border ${
                   inWatchlist
                     ? "bg-[#46D369] text-black border-[#46D369]"

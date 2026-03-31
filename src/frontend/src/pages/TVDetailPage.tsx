@@ -1,10 +1,9 @@
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Check, Play, Plus, Star, Tv } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ItemType } from "../backend";
 import ContentRow from "../components/ContentRow";
 import TrailerModal from "../components/TrailerModal";
-import { useActor } from "../hooks/useActor";
+import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import { formatDate, formatRating, truncate } from "../lib/helpers";
 import { enterPlayerMode } from "../lib/playerUtils";
 import {
@@ -27,10 +26,10 @@ export default function TVDetailPage() {
   const [similar, setSimilar] = useState<TVShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTrailer, setActiveTrailer] = useState<Video | null>(null);
-  const [inWatchlist, setInWatchlist] = useState(false);
-  const { actor } = useActor();
+  const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
 
   const showId = Number.parseInt(id, 10);
+  const inWatchlist = watchlistIds.has(showId);
 
   useEffect(() => {
     if (!showId) return;
@@ -70,20 +69,6 @@ export default function TVDetailPage() {
       cancelled = true;
     };
   }, [showId]);
-
-  useEffect(() => {
-    if (!actor || !showId) return;
-    void actor.getWatchlist().then((list) => {
-      setInWatchlist(list.some((i) => Number(i.id) === showId));
-    });
-  }, [actor, showId]);
-
-  async function toggleWatchlist() {
-    if (!actor) return;
-    await actor.toggleItem(BigInt(showId), ItemType.tv);
-    const list = await actor.getWatchlist();
-    setInWatchlist(list.some((i) => Number(i.id) === showId));
-  }
 
   if (loading) {
     return (
@@ -230,7 +215,7 @@ export default function TVDetailPage() {
               <button
                 type="button"
                 data-ocid="tv.toggle"
-                onClick={toggleWatchlist}
+                onClick={() => toggleWatchlist(showId, "tv")}
                 className={`flex items-center gap-2 font-semibold px-6 py-3 rounded-lg transition-colors text-sm border ${
                   inWatchlist
                     ? "bg-[#46D369] text-black border-[#46D369]"
