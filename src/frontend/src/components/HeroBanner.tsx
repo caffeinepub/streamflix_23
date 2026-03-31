@@ -1,9 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Info, Play, Star } from "lucide-react";
+import { Info, Play, Star, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatRating, formatYear, truncate } from "../lib/helpers";
 import { getBackdropUrl } from "../lib/tmdb";
 import { type MediaItem, getDate, getTitle, isMovie } from "../lib/types";
+
+const TMDB_KEY = "49b128b9a6ea789ec26c298a504887a7";
 
 interface HeroBannerProps {
   items: MediaItem[];
@@ -11,6 +13,8 @@ interface HeroBannerProps {
 
 export default function HeroBanner({ items }: HeroBannerProps) {
   const [current, setCurrent] = useState(0);
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +24,26 @@ export default function HeroBanner({ items }: HeroBannerProps) {
     }, 8000);
     return () => clearInterval(timer);
   }, [items.length]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    const item = items[current];
+    setTrailerKey(null);
+    const mediaType = isMovie(item) ? "movie" : "tv";
+    fetch(
+      `https://api.themoviedb.org/3/${mediaType}/${item.id}/videos?api_key=${TMDB_KEY}`,
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const results: { site: string; type: string; key: string }[] =
+          data.results ?? [];
+        const trailer =
+          results.find((v) => v.site === "YouTube" && v.type === "Trailer") ??
+          results.find((v) => v.site === "YouTube" && v.type === "Teaser");
+        setTrailerKey(trailer?.key ?? null);
+      })
+      .catch(() => setTrailerKey(null));
+  }, [current, items]);
 
   if (!items.length) {
     return (
@@ -34,6 +58,10 @@ export default function HeroBanner({ items }: HeroBannerProps) {
   const mediaType = isMovie(item) ? "movie" : "tv";
   const date = getDate(item);
   const backdrop = getBackdropUrl(item.backdrop_path, "original");
+
+  const trailerSrc = trailerKey
+    ? `https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${trailerKey}&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&enablejsapi=0`
+    : null;
 
   function goToDetail() {
     if (isMovie(item)) {
@@ -59,7 +87,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
 
   return (
     <div className="relative w-full h-[80vh] min-h-[520px] overflow-hidden">
-      {/* Backdrop image */}
+      {/* Backdrop image (always shown as fallback/poster) */}
       {backdrop && (
         <img
           key={item.id}
@@ -67,6 +95,26 @@ export default function HeroBanner({ items }: HeroBannerProps) {
           alt={title}
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
+      )}
+
+      {/* YouTube trailer iframe */}
+      {trailerSrc && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <iframe
+            key={`${trailerKey}-${isMuted ? 1 : 0}`}
+            src={trailerSrc}
+            allow="autoplay"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              width: "177.78vh",
+              height: "56.25vw",
+              minWidth: "100%",
+              minHeight: "100%",
+              border: "none",
+            }}
+            title="trailer"
+          />
+        </div>
       )}
 
       {/* Gradients */}
@@ -132,21 +180,37 @@ export default function HeroBanner({ items }: HeroBannerProps) {
         </div>
       </div>
 
-      {/* Dots */}
-      {items.length > 1 && (
-        <div className="absolute bottom-8 right-8 md:right-14 flex gap-2">
-          {items.slice(0, 5).map((itm, i) => (
-            <button
-              type="button"
-              key={itm.id}
-              onClick={() => setCurrent(i)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                i === current ? "bg-white w-4" : "bg-[#555] hover:bg-[#888]"
-              }`}
-            />
-          ))}
-        </div>
-      )}
+      {/* Bottom-right controls: mute button + dots */}
+      <div className="absolute bottom-8 right-8 md:right-14 flex items-center gap-3">
+        {/* Mute toggle (only shown when trailer is playing) */}
+        {trailerKey && (
+          <button
+            type="button"
+            data-ocid="hero.toggle"
+            onClick={() => setIsMuted((m) => !m)}
+            className="w-9 h-9 rounded-full bg-[#1a1a1acc] border border-[#555] flex items-center justify-center text-white hover:bg-[#2a2a2a] transition-colors backdrop-blur-sm"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+        )}
+
+        {/* Dots */}
+        {items.length > 1 && (
+          <div className="flex gap-2">
+            {items.slice(0, 5).map((itm, i) => (
+              <button
+                type="button"
+                key={itm.id}
+                onClick={() => setCurrent(i)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  i === current ? "bg-white w-4" : "bg-[#555] hover:bg-[#888]"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

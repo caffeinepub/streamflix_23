@@ -274,9 +274,16 @@ export default function ProfilePage() {
             data-ocid="profile.streaming.panel"
           >
             <ProviderCard
+              id="vidfast"
+              label="Vidfast"
+              subtitle="Native next episode, autoplay & subtitle support"
+              active={provider === "vidfast"}
+              onClick={() => setProvider("vidfast")}
+            />
+            <ProviderCard
               id="vidking"
               label="VidKing"
-              subtitle="Default streaming provider"
+              subtitle="Reliable streaming provider"
               active={provider === "vidking"}
               onClick={() => setProvider("vidking")}
             />
@@ -287,12 +294,33 @@ export default function ProfilePage() {
               active={provider === "videasy"}
               onClick={() => setProvider("videasy")}
             />
+            <ProviderCard
+              id="vidrock"
+              label="VidRock"
+              subtitle="Built-in episode selector, autoplay & next episode"
+              active={provider === "vidrock"}
+              onClick={() => setProvider("vidrock")}
+            />
           </div>
+          {provider === "vidfast" && (
+            <p className="text-[#B3B3B3] text-xs mt-4 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E50914]" />
+              Vidfast is active — native next episode, autoplay, and subtitle
+              support are enabled in the player.
+            </p>
+          )}
           {provider === "videasy" && (
             <p className="text-[#B3B3B3] text-xs mt-4 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#E50914]" />
               Videasy is active — next episode button, autoplay, and episode
               selector are enabled in the player.
+            </p>
+          )}
+          {provider === "vidrock" && (
+            <p className="text-[#B3B3B3] text-xs mt-4 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E50914]" />
+              VidRock is active — episode selector, autoplay, and next episode
+              are handled natively in the player.
             </p>
           )}
         </div>

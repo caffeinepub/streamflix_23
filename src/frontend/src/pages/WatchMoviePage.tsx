@@ -7,6 +7,16 @@ import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchMovieDetails } from "../lib/tmdb";
 import type { Movie } from "../lib/types";
 
+const VIDFAST_ORIGINS = [
+  "https://vidfast.pro",
+  "https://vidfast.in",
+  "https://vidfast.io",
+  "https://vidfast.me",
+  "https://vidfast.net",
+  "https://vidfast.pm",
+  "https://vidfast.xyz",
+];
+
 export default function WatchMoviePage() {
   const { id } = useParams({ strict: false }) as { id: string };
   const navigate = useNavigate();
@@ -67,10 +77,66 @@ export default function WatchMoviePage() {
     };
   }, [movieId, stableAdd]);
 
+  // VidRock postMessage listener for Continue Watching
+  useEffect(() => {
+    if (provider !== "vidrock") return;
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== "https://vidrock.net") return;
+      const data = event.data;
+      if (data?.type === "PLAYER_EVENT") {
+        const { event: eventType } = data.data ?? {};
+        if (eventType === "timeupdate" || eventType === "ended") {
+          if (movie) {
+            stableAdd({
+              id: movie.id,
+              type: "movie",
+              title: movie.title,
+              posterPath: movie.poster_path,
+              backdropPath: movie.backdrop_path,
+              timestamp: Date.now(),
+            });
+          }
+        }
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [provider, movie, stableAdd]);
+
+  // Vidfast postMessage listener for Continue Watching
+  useEffect(() => {
+    if (provider !== "vidfast") return;
+    function handleMessage(event: MessageEvent) {
+      if (!VIDFAST_ORIGINS.includes(event.origin)) return;
+      const data = event.data;
+      if (data?.type === "PLAYER_EVENT") {
+        const { event: eventType } = data.data ?? {};
+        if (eventType === "timeupdate" || eventType === "ended") {
+          if (movie) {
+            stableAdd({
+              id: movie.id,
+              type: "movie",
+              title: movie.title,
+              posterPath: movie.poster_path,
+              backdropPath: movie.backdrop_path,
+              timestamp: Date.now(),
+            });
+          }
+        }
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [provider, movie, stableAdd]);
+
   const iframeSrc =
     provider === "videasy"
       ? `https://player.videasy.net/movie/${movieId}`
-      : `https://www.vidking.net/embed/movie/${movieId}`;
+      : provider === "vidrock"
+        ? `https://vidrock.net/movie/${movieId}?autoplay=true&download=false&lang=en`
+        : provider === "vidfast"
+          ? `https://vidfast.pro/movie/${movieId}?autoPlay=true&title=true&fullscreenButton=true&sub=en&poster=true`
+          : `https://www.vidking.net/embed/movie/${movieId}`;
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: click is for activity detection only
@@ -132,6 +198,16 @@ export default function WatchMoviePage() {
               Videasy
             </span>
           )}
+          {provider === "vidrock" && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded bg-[#E50914]/20 text-[#E50914] border border-[#E50914]/30">
+              VidRock
+            </span>
+          )}
+          {provider === "vidfast" && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded bg-[#E50914]/20 text-[#E50914] border border-[#E50914]/30">
+              Vidfast
+            </span>
+          )}
         </div>
       </div>
 
@@ -148,7 +224,7 @@ export default function WatchMoviePage() {
           flex: 1,
         }}
         allowFullScreen
-        allow="autoplay; fullscreen"
+        allow="autoplay; fullscreen; encrypted-media"
       />
     </div>
   );

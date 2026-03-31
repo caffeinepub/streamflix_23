@@ -14,6 +14,16 @@ import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchTVDetails, fetchTVSeasonDetails } from "../lib/tmdb";
 import type { TVShow } from "../lib/types";
 
+const VIDFAST_ORIGINS = [
+  "https://vidfast.pro",
+  "https://vidfast.in",
+  "https://vidfast.io",
+  "https://vidfast.me",
+  "https://vidfast.net",
+  "https://vidfast.pm",
+  "https://vidfast.xyz",
+];
+
 export default function WatchTVPage() {
   const params = useParams({ strict: false }) as {
     id: string;
@@ -99,7 +109,7 @@ export default function WatchTVPage() {
     };
   }, [resetTimer]);
 
-  // Start idle timer when autoplay is on (videasy)
+  // Start idle timer when autoplay is on (videasy only)
   useEffect(() => {
     if (provider !== "videasy" || !autoplay || isLastSeasonLastEpisode) return;
     if (idleTimer.current) clearTimeout(idleTimer.current);
@@ -119,7 +129,7 @@ export default function WatchTVPage() {
     };
   }, []);
 
-  // Countdown interval
+  // Countdown interval (videasy only)
   useEffect(() => {
     if (!countdownActive) return;
     countdownTimer.current = setInterval(() => {
@@ -205,6 +215,62 @@ export default function WatchTVPage() {
     };
   }, [showId, seasonNum]);
 
+  // VidRock postMessage listener for Continue Watching
+  useEffect(() => {
+    if (provider !== "vidrock") return;
+    function handleMessage(event: MessageEvent) {
+      if (event.origin !== "https://vidrock.net") return;
+      const data = event.data;
+      if (data?.type === "PLAYER_EVENT") {
+        const { event: eventType } = data.data ?? {};
+        if (eventType === "timeupdate" || eventType === "ended") {
+          if (show) {
+            stableAdd({
+              id: show.id,
+              type: "tv",
+              title: show.name,
+              posterPath: show.poster_path,
+              backdropPath: show.backdrop_path,
+              timestamp: Date.now(),
+              season: seasonNum,
+              episode: episodeNum,
+            });
+          }
+        }
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [provider, show, seasonNum, episodeNum, stableAdd]);
+
+  // Vidfast postMessage listener for Continue Watching
+  useEffect(() => {
+    if (provider !== "vidfast") return;
+    function handleMessage(event: MessageEvent) {
+      if (!VIDFAST_ORIGINS.includes(event.origin)) return;
+      const data = event.data;
+      if (data?.type === "PLAYER_EVENT") {
+        const { event: eventType } = data.data ?? {};
+        if (eventType === "timeupdate" || eventType === "ended") {
+          if (show) {
+            stableAdd({
+              id: show.id,
+              type: "tv",
+              title: show.name,
+              posterPath: show.poster_path,
+              backdropPath: show.backdrop_path,
+              timestamp: Date.now(),
+              season: seasonNum,
+              episode: episodeNum,
+            });
+          }
+        }
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [provider, show, seasonNum, episodeNum, stableAdd]);
+
   function goTo(s: number, e: number) {
     cancelCountdown();
     void navigate({
@@ -222,10 +288,16 @@ export default function WatchTVPage() {
     }
   }
 
+  const useNativeControls = provider === "vidrock" || provider === "vidfast";
+
   const iframeSrc =
     provider === "videasy"
       ? `https://player.videasy.net/tv/${showId}/${seasonNum}/${episodeNum}`
-      : `https://www.vidking.net/embed/tv/${showId}/${seasonNum}/${episodeNum}`;
+      : provider === "vidrock"
+        ? `https://vidrock.net/tv/${showId}/${seasonNum}/${episodeNum}?autoplay=true&download=false&lang=en&autonext=true&nextbutton=true&episodeselector=true`
+        : provider === "vidfast"
+          ? `https://vidfast.pro/tv/${showId}/${seasonNum}/${episodeNum}?autoPlay=true&title=true&fullscreenButton=true&sub=en&poster=true&nextButton=true&autoNext=true`
+          : `https://www.vidking.net/embed/tv/${showId}/${seasonNum}/${episodeNum}`;
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: click is for activity detection only
@@ -315,21 +387,23 @@ export default function WatchTVPage() {
             </div>
           )}
 
-          {/* Episode selector toggle */}
-          <button
-            type="button"
-            data-ocid="watch.toggle"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectorOpen((v) => !v);
-            }}
-            className="flex items-center gap-1.5 text-white/80 hover:text-white transition-colors bg-black/40 rounded-lg px-3 py-1.5"
-          >
-            <ListVideo size={18} />
-            <span className="text-xs font-medium hidden sm:inline">
-              Episodes
-            </span>
-          </button>
+          {/* Episode selector toggle — only for VidKing and Videasy */}
+          {!useNativeControls && (
+            <button
+              type="button"
+              data-ocid="watch.toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectorOpen((v) => !v);
+              }}
+              className="flex items-center gap-1.5 text-white/80 hover:text-white transition-colors bg-black/40 rounded-lg px-3 py-1.5"
+            >
+              <ListVideo size={18} />
+              <span className="text-xs font-medium hidden sm:inline">
+                Episodes
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -346,7 +420,7 @@ export default function WatchTVPage() {
           flex: 1,
         }}
         allowFullScreen
-        allow="autoplay; fullscreen"
+        allow="autoplay; fullscreen; encrypted-media"
       />
 
       {/* Videasy: Next Episode button */}
@@ -429,8 +503,8 @@ export default function WatchTVPage() {
           </div>
         )}
 
-      {/* Season/Episode Selector overlay */}
-      {selectorOpen && (
+      {/* Season/Episode Selector overlay — only for VidKing and Videasy */}
+      {selectorOpen && !useNativeControls && (
         <div
           style={{
             position: "absolute",

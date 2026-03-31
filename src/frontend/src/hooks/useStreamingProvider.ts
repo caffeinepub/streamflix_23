@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../lib/firebase";
 
-export type StreamingProvider = "vidking" | "videasy";
+export type StreamingProvider = "vidking" | "videasy" | "vidrock" | "vidfast";
 
 const LS_KEY = "streamflix_streaming_provider";
 const PREF_DOC = (uid: string) =>
@@ -16,7 +16,7 @@ export function useStreamingProvider(): [
   const { user } = useAuth();
   const [provider, setProviderState] = useState<StreamingProvider>(
     () =>
-      (localStorage.getItem(LS_KEY) as StreamingProvider | null) ?? "vidking",
+      (localStorage.getItem(LS_KEY) as StreamingProvider | null) ?? "vidfast",
   );
 
   // On mount (or when user changes), read Firestore first if logged in
@@ -28,7 +28,12 @@ export function useStreamingProvider(): [
         if (cancelled) return;
         if (snap.exists()) {
           const val = snap.data()?.provider as StreamingProvider | undefined;
-          if (val === "vidking" || val === "videasy") {
+          if (
+            val === "vidking" ||
+            val === "videasy" ||
+            val === "vidrock" ||
+            val === "vidfast"
+          ) {
             setProviderState(val);
             localStorage.setItem(LS_KEY, val);
           }
