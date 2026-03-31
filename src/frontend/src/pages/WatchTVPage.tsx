@@ -6,9 +6,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { ArrowLeft, ListVideo } from "lucide-react";
+import { ArrowLeft, ListVideo, SkipForward } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
+import { useStreamingProvider } from "../hooks/useStreamingProvider";
 import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchTVDetails, fetchTVSeasonDetails } from "../lib/tmdb";
 import type { TVShow } from "../lib/types";
@@ -22,6 +23,7 @@ export default function WatchTVPage() {
   const { id, season, episode } = params;
   const navigate = useNavigate();
   const { addToHistory } = useFirestoreWatchHistory();
+  const [provider] = useStreamingProvider();
 
   const showId = Number.parseInt(id, 10);
   const seasonNum = Number.parseInt(season, 10);
@@ -34,7 +36,28 @@ export default function WatchTVPage() {
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Videasy-only state
+  const [autoplay, setAutoplay] = useState(true);
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Stable refs so countdown effect doesn't need them as deps
+  const seasonNumRef = useRef(seasonNum);
+  const episodeNumRef = useRef(episodeNum);
+  const episodeCountRef = useRef(episodeCount);
+  const numSeasonsRef = useRef(show?.number_of_seasons ?? 1);
+  seasonNumRef.current = seasonNum;
+  episodeNumRef.current = episodeNum;
+  episodeCountRef.current = episodeCount;
+  numSeasonsRef.current = show?.number_of_seasons ?? 1;
+
   const stableAdd = useCallback(addToHistory, []);
+
+  const numSeasons = show?.number_of_seasons ?? 1;
+  const isLastEpisode = episodeNum >= episodeCount;
+  const isLastSeasonLastEpisode = isLastEpisode && seasonNum >= numSeasons;
 
   const resetTimer = useCallback(() => {
     setControlsVisible(true);
@@ -42,12 +65,52 @@ export default function WatchTVPage() {
     hideTimer.current = setTimeout(() => setControlsVisible(false), 3000);
   }, []);
 
+  const cancelCountdown = useCallback(() => {
+    if (countdownTimer.current) {
+      clearInterval(countdownTimer.current);
+      countdownTimer.current = null;
+    }
+    setCountdownActive(false);
+    setCountdown(10);
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+  }, []);
+
+  const handleUserInteraction = useCallback(() => {
+    resetTimer();
+    setCountdownActive((active) => {
+      if (active) {
+        if (countdownTimer.current) {
+          clearInterval(countdownTimer.current);
+          countdownTimer.current = null;
+        }
+        setCountdown(10);
+        if (idleTimer.current) clearTimeout(idleTimer.current);
+        return false;
+      }
+      return active;
+    });
+  }, [resetTimer]);
+
   useEffect(() => {
     resetTimer();
     return () => {
       if (hideTimer.current) clearTimeout(hideTimer.current);
+      if (idleTimer.current) clearTimeout(idleTimer.current);
     };
   }, [resetTimer]);
+
+  // Start idle timer when autoplay is on (videasy)
+  useEffect(() => {
+    if (provider !== "videasy" || !autoplay || isLastSeasonLastEpisode) return;
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => {
+      setCountdownActive(true);
+      setCountdown(10);
+    }, 30000);
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [provider, autoplay, isLastSeasonLastEpisode]);
 
   useEffect(() => {
     void enterPlayerMode();
@@ -55,6 +118,47 @@ export default function WatchTVPage() {
       void exitPlayerMode();
     };
   }, []);
+
+  // Countdown interval
+  useEffect(() => {
+    if (!countdownActive) return;
+    countdownTimer.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownTimer.current!);
+          countdownTimer.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (countdownTimer.current) clearInterval(countdownTimer.current);
+    };
+  }, [countdownActive]);
+
+  // When countdown hits 0, navigate to next episode
+  useEffect(() => {
+    if (countdown !== 0 || !countdownActive) return;
+    setCountdownActive(false);
+    setCountdown(10);
+    const sNum = seasonNumRef.current;
+    const eNum = episodeNumRef.current;
+    const eCount = episodeCountRef.current;
+    const nSeasons = numSeasonsRef.current;
+    const lastEp = eNum >= eCount;
+    const lastAll = lastEp && sNum >= nSeasons;
+    if (!lastAll) {
+      void navigate({
+        to: "/watch/tv/$id/$season/$episode",
+        params: {
+          id,
+          season: String(lastEp ? sNum + 1 : sNum),
+          episode: String(lastEp ? 1 : eNum + 1),
+        },
+      });
+    }
+  }, [countdown, countdownActive, id, navigate]);
 
   useEffect(() => {
     if (!showId) return;
@@ -101,14 +205,27 @@ export default function WatchTVPage() {
     };
   }, [showId, seasonNum]);
 
-  const numSeasons = show?.number_of_seasons ?? 1;
-
   function goTo(s: number, e: number) {
+    cancelCountdown();
     void navigate({
       to: "/watch/tv/$id/$season/$episode",
       params: { id, season: String(s), episode: String(e) },
     });
   }
+
+  function handleNextEpisode() {
+    if (isLastSeasonLastEpisode) return;
+    if (isLastEpisode) {
+      goTo(seasonNum + 1, 1);
+    } else {
+      goTo(seasonNum, episodeNum + 1);
+    }
+  }
+
+  const iframeSrc =
+    provider === "videasy"
+      ? `https://player.videasy.net/tv/${showId}/${seasonNum}/${episodeNum}`
+      : `https://www.vidking.net/embed/tv/${showId}/${seasonNum}/${episodeNum}`;
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: click is for activity detection only
@@ -121,9 +238,9 @@ export default function WatchTVPage() {
         display: "flex",
         flexDirection: "column",
       }}
-      onMouseMove={resetTimer}
-      onTouchStart={resetTimer}
-      onClick={resetTimer}
+      onMouseMove={handleUserInteraction}
+      onTouchStart={handleUserInteraction}
+      onClick={handleUserInteraction}
     >
       {/* Overlay header */}
       <div
@@ -169,11 +286,43 @@ export default function WatchTVPage() {
               </h1>
             )}
           </div>
+
+          {/* Videasy autoplay toggle in header */}
+          {provider === "videasy" && (
+            <div className="flex items-center gap-2 mr-1">
+              <span className="text-white/60 text-xs hidden sm:inline">
+                Autoplay
+              </span>
+              <button
+                type="button"
+                data-ocid="watch.toggle"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAutoplay((v) => !v);
+                  if (countdownActive) cancelCountdown();
+                }}
+                className={`relative w-10 h-5 rounded-full transition-colors ${
+                  autoplay ? "bg-[#E50914]" : "bg-white/20"
+                }`}
+                aria-label="Toggle autoplay"
+              >
+                <span
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    autoplay ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
+
           {/* Episode selector toggle */}
           <button
             type="button"
             data-ocid="watch.toggle"
-            onClick={() => setSelectorOpen((v) => !v)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectorOpen((v) => !v);
+            }}
             className="flex items-center gap-1.5 text-white/80 hover:text-white transition-colors bg-black/40 rounded-lg px-3 py-1.5"
           >
             <ListVideo size={18} />
@@ -186,7 +335,7 @@ export default function WatchTVPage() {
 
       {/* Fullscreen iframe */}
       <iframe
-        src={`https://www.vidking.net/embed/tv/${showId}/${seasonNum}/${episodeNum}`}
+        src={iframeSrc}
         title={`${show?.name ?? "Show"} S${seasonNum}E${episodeNum}`}
         data-ocid="watch.canvas_target"
         style={{
@@ -199,6 +348,86 @@ export default function WatchTVPage() {
         allowFullScreen
         allow="autoplay; fullscreen"
       />
+
+      {/* Videasy: Next Episode button */}
+      {provider === "videasy" && !isLastSeasonLastEpisode && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "80px",
+            right: "24px",
+            zIndex: 15,
+            opacity: controlsVisible ? 1 : 0,
+            transition: "opacity 0.4s",
+            pointerEvents: controlsVisible ? "auto" : "none",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          }}
+        >
+          <button
+            type="button"
+            data-ocid="watch.primary_button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextEpisode();
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/60 text-white rounded-lg text-sm font-medium backdrop-blur-sm transition-all"
+          >
+            <SkipForward size={18} />
+            Next Episode
+          </button>
+        </div>
+      )}
+
+      {/* Videasy: Autoplay countdown overlay */}
+      {provider === "videasy" &&
+        countdownActive &&
+        !isLastSeasonLastEpisode && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "130px",
+              right: "24px",
+              zIndex: 16,
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}
+          >
+            <div className="flex flex-col items-end gap-2 bg-black/70 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <p className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                Up Next
+              </p>
+              <p className="text-white text-sm font-semibold">
+                {isLastEpisode
+                  ? `Season ${seasonNum + 1}, Episode 1`
+                  : `Episode ${episodeNum + 1}`}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <button
+                  type="button"
+                  data-ocid="watch.cancel_button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cancelCountdown();
+                  }}
+                  className="text-white/60 hover:text-white text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  data-ocid="watch.primary_button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNextEpisode();
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[#E50914] hover:bg-[#C40812] text-white rounded-md text-xs font-semibold transition-colors"
+                >
+                  <SkipForward size={14} />
+                  Play ({countdown}s)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Season/Episode Selector overlay */}
       {selectorOpen && (
@@ -292,7 +521,10 @@ export default function WatchTVPage() {
 
             <button
               type="button"
-              onClick={() => setSelectorOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectorOpen(false);
+              }}
               className="ml-auto text-white/50 hover:text-white text-xs transition-colors"
             >
               Close

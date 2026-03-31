@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
+import { useStreamingProvider } from "../hooks/useStreamingProvider";
 import { enterPlayerMode, exitPlayerMode } from "../lib/playerUtils";
 import { fetchMovieDetails } from "../lib/tmdb";
 import type { Movie } from "../lib/types";
@@ -13,6 +14,7 @@ export default function WatchMoviePage() {
   const [loading, setLoading] = useState(true);
   const [controlsVisible, setControlsVisible] = useState(true);
   const { addToHistory } = useFirestoreWatchHistory();
+  const [provider] = useStreamingProvider();
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const movieId = Number.parseInt(id, 10);
@@ -64,6 +66,11 @@ export default function WatchMoviePage() {
       cancelled = true;
     };
   }, [movieId, stableAdd]);
+
+  const iframeSrc =
+    provider === "videasy"
+      ? `https://player.videasy.net/movie/${movieId}`
+      : `https://www.vidking.net/embed/movie/${movieId}`;
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: click is for activity detection only
@@ -120,12 +127,17 @@ export default function WatchMoviePage() {
               </h1>
             )}
           </div>
+          {provider === "videasy" && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded bg-[#E50914]/20 text-[#E50914] border border-[#E50914]/30">
+              Videasy
+            </span>
+          )}
         </div>
       </div>
 
       {/* Fullscreen iframe */}
       <iframe
-        src={`https://www.vidking.net/embed/movie/${movieId}`}
+        src={iframeSrc}
         title={movie?.title ?? "Movie Player"}
         data-ocid="watch.canvas_target"
         style={{

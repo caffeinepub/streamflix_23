@@ -1,29 +1,37 @@
 # StreamFlix
 
 ## Current State
-Streaming site with TMDB data. Detail pages for movies and TV shows show metadata, cast, trailers (YouTube). Watchlist stored on-chain. No actual streaming/playback.
+- Streaming is exclusively via VidKing API (`https://www.vidking.net/embed/movie/{id}` and `https://www.vidking.net/embed/tv/{id}/{season}/{episode}`)
+- WatchMoviePage and WatchTVPage render a fullscreen iframe with VidKing URL
+- ProfilePage has user info, My List, and Continue Watching sections
+- No user preference for streaming provider exists
 
 ## Requested Changes (Diff)
 
 ### Add
-- `WatchMoviePage` at `/watch/movie/:id` — full-screen VidKing iframe player
-- `WatchTVPage` at `/watch/tv/:id/:season/:episode` — full-screen VidKing iframe player with season/episode selector
-- VidKing embed URLs:
-  - Movie: `https://www.vidking.net/embed/movie/{tmdb_id}`
-  - TV: `https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}`
-- Routes registered in App.tsx for both watch pages
+- `useStreamingProvider` hook: reads/writes streaming provider preference (`'vidking' | 'videasy'`) to localStorage; syncs to Firestore for logged-in users under `users/{uid}/preferences/streaming`
+- Streaming provider selector in ProfilePage (below profile header, above My List): two styled toggle buttons "VidKing" and "Videasy" with a brief description; selecting one saves preference and updates the app immediately
+- Videasy embed URLs:
+  - Movie: `https://player.videasy.net/movie/{id}`
+  - TV: `https://player.videasy.net/tv/{id}/{season}/{episode}`
+- WatchMoviePage: switch iframe src based on current provider preference
+- WatchTVPage (Videasy mode): custom Netflix-style overlays built in our app:
+  - **Top overlay**: Back button + show title + S##E## label + Episode Selector toggle button (same as current)
+  - **Next Episode button**: floating button bottom-right, shows when not on last episode of season; clicking navigates to next episode
+  - **Autoplay next episode**: 10-second countdown overlay at bottom when near episode end (simulate with a visible "Next Episode in Xs" bar that auto-navigates); togglable via a setting in the overlay
+  - **Episode selector overlay**: same as current VidKing mode (season + episode dropdowns)
+- WatchTVPage (VidKing mode): no changes to existing behavior
 
 ### Modify
-- `MovieDetailPage`: Change "Play Trailer" button to "Play" (primary action) that navigates to `/watch/movie/:id`. Keep trailer button as secondary.
-- `TVDetailPage`: Change "Play Trailer" button to "Play" (primary action) that navigates to `/watch/tv/:id/1/1`. Keep trailer button as secondary.
-- `HeroBanner`: "Play" button should navigate to watch page.
+- WatchMoviePage: conditionally use Videasy or VidKing src based on provider preference
+- WatchTVPage: conditionally render Videasy-enhanced overlay controls or VidKing controls
+- ProfilePage: add streaming provider toggle section
 
 ### Remove
-- Nothing removed.
+- Nothing removed
 
 ## Implementation Plan
-1. Create `src/frontend/src/pages/WatchMoviePage.tsx` with VidKing iframe embed
-2. Create `src/frontend/src/pages/WatchTVPage.tsx` with VidKing iframe + season/episode picker
-3. Update `App.tsx` to add routes `/watch/movie/$id` and `/watch/tv/$id/$season/$episode`
-4. Update `MovieDetailPage.tsx` and `TVDetailPage.tsx` Play buttons to navigate to watch pages
-5. Update `HeroBanner.tsx` Play button similarly
+1. Create `src/hooks/useStreamingProvider.ts` — localStorage + Firestore sync for `'vidking' | 'videasy'` preference
+2. Update `ProfilePage.tsx` — add streaming provider toggle UI section with two buttons
+3. Update `WatchMoviePage.tsx` — use `useStreamingProvider` to switch iframe src
+4. Update `WatchTVPage.tsx` — use `useStreamingProvider`; when Videasy: add Next Episode button, autoplay countdown overlay, keep episode selector; when VidKing: unchanged

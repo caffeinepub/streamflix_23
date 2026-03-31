@@ -7,6 +7,7 @@ import {
   LogOut,
   Play,
   Trash2,
+  Tv2,
   User,
   X,
 } from "lucide-react";
@@ -14,6 +15,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
 import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
+import { useStreamingProvider } from "../hooks/useStreamingProvider";
+import type { StreamingProvider } from "../hooks/useStreamingProvider";
 import { db } from "../lib/firebase";
 
 const IMG_BACKDROP = "https://image.tmdb.org/t/p/w500";
@@ -60,12 +63,54 @@ function getInitials(name: string | null, email: string | null): string {
   return "GU";
 }
 
+interface ProviderCardProps {
+  id: StreamingProvider;
+  label: string;
+  subtitle: string;
+  active: boolean;
+  onClick: () => void;
+}
+
+function ProviderCard({
+  id,
+  label,
+  subtitle,
+  active,
+  onClick,
+}: ProviderCardProps) {
+  return (
+    <button
+      type="button"
+      data-ocid={`profile.${id}.button`}
+      onClick={onClick}
+      className={`flex-1 min-w-[140px] flex flex-col gap-1 px-5 py-4 rounded-xl border-2 text-left transition-all ${
+        active
+          ? "border-[#E50914] bg-[#E50914]/10"
+          : "border-[#2B2B2B] bg-[#1A1A1A] hover:border-[#3A3A3A]"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        {active && (
+          <span className="w-2 h-2 rounded-full bg-[#E50914] flex-shrink-0" />
+        )}
+        <span
+          className={`font-semibold text-sm ${active ? "text-white" : "text-[#B3B3B3]"}`}
+        >
+          {label}
+        </span>
+      </div>
+      <span className="text-xs text-[#B3B3B3] leading-snug">{subtitle}</span>
+    </button>
+  );
+}
+
 export default function ProfilePage() {
   const { history, removeFromHistory, clearHistory } =
     useFirestoreWatchHistory();
   const { user, signOut, setSignInModalOpen } = useAuth();
   const { toggleWatchlist } = useFirestoreWatchlist();
   const navigate = useNavigate();
+  const [provider, setProvider] = useStreamingProvider();
 
   const [watchlistDocs, setWatchlistDocs] = useState<WatchlistDoc[]>([]);
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
@@ -211,6 +256,44 @@ export default function ProfilePage() {
                 Sign In
               </button>
             </>
+          )}
+        </div>
+
+        {/* Streaming Source section */}
+        <div className="mb-12 pb-10 border-b border-[#2A2A2A]">
+          <div className="flex items-center gap-3 mb-2">
+            <Tv2 size={22} className="text-[#E50914]" />
+            <h2 className="text-white text-2xl font-bold">Streaming Source</h2>
+          </div>
+          <p className="text-[#B3B3B3] text-sm mb-5">
+            Choose your preferred streaming provider. This setting persists
+            across sessions.
+          </p>
+          <div
+            className="flex flex-wrap gap-4"
+            data-ocid="profile.streaming.panel"
+          >
+            <ProviderCard
+              id="vidking"
+              label="VidKing"
+              subtitle="Default streaming provider"
+              active={provider === "vidking"}
+              onClick={() => setProvider("vidking")}
+            />
+            <ProviderCard
+              id="videasy"
+              label="Videasy"
+              subtitle="Enhanced player with next episode & autoplay"
+              active={provider === "videasy"}
+              onClick={() => setProvider("videasy")}
+            />
+          </div>
+          {provider === "videasy" && (
+            <p className="text-[#B3B3B3] text-xs mt-4 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E50914]" />
+              Videasy is active — next episode button, autoplay, and episode
+              selector are enabled in the player.
+            </p>
           )}
         </div>
 

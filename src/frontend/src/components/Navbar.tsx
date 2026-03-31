@@ -20,11 +20,9 @@ export default function Navbar() {
     >
       <div className="max-w-[1400px] mx-auto px-6 md:px-14 h-16 flex items-center">
         <Link to="/" data-ocid="nav.home.link" className="shrink-0">
-          <img
-            src="/assets/gemini_generated_image_ixh0qiixh0qiixh0-019d4418-a97b-7725-b986-e75112548cc6.png"
-            alt="StreamFlix"
-            className="h-8 w-auto object-contain"
-          />
+          <span className="text-[#E50914] text-2xl font-black tracking-tight select-none">
+            StreamFlix
+          </span>
         </Link>
       </div>
     </nav>

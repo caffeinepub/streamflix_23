@@ -35,12 +35,12 @@ export default function ContentRow({
       <h2 className="text-white font-semibold text-lg md:text-xl mb-3 px-6 md:px-14">
         {title}
       </h2>
-      <div className="relative">
+      <div className="relative overflow-visible">
         {/* Left arrow */}
         <button
           type="button"
           onClick={() => scroll("left")}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-[#0B0B0Bcc] text-white p-2 rounded-full opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-[#1A1A1A] border border-[#2A2A2A]"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-[60] bg-[#0B0B0Bcc] text-white p-2 rounded-full opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-[#1A1A1A] border border-[#2A2A2A]"
           aria-label="Scroll left"
         >
           <ChevronLeft size={20} />
@@ -71,7 +71,7 @@ export default function ContentRow({
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-[#0B0B0Bcc] text-white p-2 rounded-full opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-[#1A1A1A] border border-[#2A2A2A]"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-[60] bg-[#0B0B0Bcc] text-white p-2 rounded-full opacity-0 group-hover/row:opacity-100 transition-opacity hover:bg-[#1A1A1A] border border-[#2A2A2A]"
           aria-label="Scroll right"
         >
           <ChevronRight size={20} />

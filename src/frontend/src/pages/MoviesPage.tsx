@@ -1,14 +1,12 @@
-import { useNavigate } from "@tanstack/react-router";
-import { Star } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { formatRating, formatYear } from "../lib/helpers";
+import MediaCard from "../components/MediaCard";
+import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import {
   fetchMovieGenres,
   fetchMoviesByGenre,
   fetchPopularMovies,
-  getPosterUrl,
 } from "../lib/tmdb";
-import type { Genre, Movie } from "../lib/types";
+import type { Genre, MediaItem, Movie } from "../lib/types";
 
 const SKELETON_KEYS = Array.from(
   { length: 20 },
@@ -24,7 +22,7 @@ export default function MoviesPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const { watchlistIds, toggleWatchlist } = useFirestoreWatchlist();
 
   useEffect(() => {
     void fetchMovieGenres().then((data) => setGenres(data.genres));
@@ -158,45 +156,15 @@ export default function MoviesPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-visible">
           {movies.map((movie) => (
-            <button
-              type="button"
+            <MediaCard
+              className="w-full"
               key={movie.id}
-              className="group cursor-pointer text-left"
-              onClick={() =>
-                navigate({ to: "/movie/$id", params: { id: String(movie.id) } })
-              }
-            >
-              <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                {movie.poster_path ? (
-                  <img
-                    src={getPosterUrl(movie.poster_path)}
-                    alt={movie.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-[#2B2B2B] flex items-center justify-center">
-                    <span className="text-[#555] text-xs text-center px-2">
-                      {movie.title}
-                    </span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                  <div className="flex items-center gap-1 text-[#46D369] text-xs">
-                    <Star size={10} fill="currentColor" />
-                    <span>{formatRating(movie.vote_average)}</span>
-                  </div>
-                </div>
-              </div>
-              <p className="mt-1.5 text-xs text-[#B3B3B3] truncate">
-                {movie.title}
-              </p>
-              <p className="text-[10px] text-[#555]">
-                {formatYear(movie.release_date)}
-              </p>
-            </button>
+              item={movie as MediaItem}
+              inWatchlist={watchlistIds.has(movie.id)}
+              onToggleWatchlist={() => toggleWatchlist(movie.id, "movie")}
+            />
           ))}
         </div>
       )}

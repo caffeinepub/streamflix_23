@@ -9,12 +9,14 @@ interface MediaCardProps {
   item: MediaItem;
   inWatchlist?: boolean;
   onToggleWatchlist?: (item: MediaItem) => void;
+  className?: string;
 }
 
 export default function MediaCard({
   item,
   inWatchlist,
   onToggleWatchlist,
+  className,
 }: MediaCardProps) {
   const [hovered, setHovered] = useState(false);
   const navigate = useNavigate();
@@ -57,7 +59,9 @@ export default function MediaCard({
 
   return (
     <div
-      className="shrink-0 w-32 md:w-40 lg:w-44 cursor-pointer text-left"
+      className={`cursor-pointer text-left ${
+        className ?? "shrink-0 w-32 md:w-40 lg:w-44"
+      }`}
       style={{ position: "relative", zIndex: hovered ? 50 : "auto" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
