@@ -15,6 +15,20 @@ const SORT_OPTIONS = [
 
 const PAGE_SIZE = 20;
 
+function SkeletonGrid() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mt-4">
+      {SKELETON_KEYS.map((key) => (
+        <div key={key} className="flex flex-col gap-2">
+          <div className="aspect-[2/3] bg-[#2B2B2B] rounded-lg animate-pulse" />
+          <div className="h-3 bg-[#2B2B2B] rounded animate-pulse w-3/4" />
+          <div className="h-2 bg-[#232323] rounded animate-pulse w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function TVPage() {
   const search = useSearch({ from: "/tv" });
   const navigate = useNavigate();
@@ -179,14 +193,7 @@ export default function TVPage() {
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {SKELETON_KEYS.map((key) => (
-            <div
-              key={key}
-              className="aspect-[2/3] bg-[#2B2B2B] rounded-lg animate-pulse"
-            />
-          ))}
-        </div>
+        <SkeletonGrid />
       ) : (
         <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-visible">
           {shows.map((show, index) => (
@@ -209,12 +216,8 @@ export default function TVPage() {
       {/* Load more sentinel */}
       <div ref={sentinelRef} className="h-10 mt-4" />
 
-      {/* Loading more spinner */}
-      {loadingMore && (
-        <div className="flex justify-center py-6">
-          <div className="w-8 h-8 border-2 border-[#E50914] border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+      {/* Skeleton for loading more */}
+      {loadingMore && <SkeletonGrid />}
 
       {/* End of results */}
       {!loading && !loadingMore && page >= totalPages && shows.length > 0 && (
