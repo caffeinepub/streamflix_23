@@ -2,10 +2,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
+    <title>StreamFlix</title>
+    <meta name="description" content="StreamFlix - Watch movies and TV shows online" />
+    <meta name="theme-color" content="#141414" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="StreamFlix" />
+    <meta name="msapplication-TileColor" content="#141414" />
+    <meta name="msapplication-TileImage" content="/assets/generated/streamflix-icon-192.dim_192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/assets/generated/streamflix-icon-192.dim_192x192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/generated/streamflix-icon-192.dim_192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/generated/streamflix-icon-512.dim_512x512.png" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
