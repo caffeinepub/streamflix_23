@@ -4,13 +4,19 @@ import {
   BookmarkX,
   Clock,
   Download,
+  Film,
+  Globe,
+  Info,
   List,
   LogOut,
   Play,
+  Smartphone,
+  Sparkles,
   Trash2,
   Tv2,
   User,
   X,
+  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
@@ -105,6 +111,33 @@ function ProviderCard({
     </button>
   );
 }
+
+const STAT_PILLS = [
+  {
+    icon: Zap,
+    label: "4 Providers",
+    sub: "Streaming sources",
+    color: "#E50914",
+  },
+  {
+    icon: Film,
+    label: "10K+ Titles",
+    sub: "Movies & TV shows",
+    color: "#F5C518",
+  },
+  {
+    icon: Smartphone,
+    label: "PWA Ready",
+    sub: "Install on any device",
+    color: "#34D399",
+  },
+  {
+    icon: Globe,
+    label: "TMDB Powered",
+    sub: "Real-time metadata",
+    color: "#60A5FA",
+  },
+];
 
 export default function ProfilePage() {
   const { history, removeFromHistory, clearHistory } =
@@ -610,6 +643,162 @@ export default function ProfilePage() {
             })}
           </div>
         )}
+
+        {/* ── About section ── */}
+        <section
+          data-ocid="about.section"
+          className="mb-12 pb-10 border-t border-[#2A2A2A] pt-10"
+          style={{ marginTop: "3rem" }}
+        >
+          {/* Section heading */}
+          <div className="flex items-center gap-3 mb-8">
+            <Info size={22} className="text-[#E50914]" />
+            <h2 className="text-white text-2xl font-bold">About</h2>
+          </div>
+
+          {/* Main glassmorphism card */}
+          <div
+            className="relative rounded-2xl overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+              border: "1px solid rgba(229,9,20,0.25)",
+              boxShadow:
+                "0 0 0 1px rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(229,9,20,0.08)",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            {/* Animated glow border pulse */}
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(229,9,20,0.1) 0%, transparent 50%, rgba(229,9,20,0.05) 100%)",
+                animation: "aboutGlowPulse 4s ease-in-out infinite",
+              }}
+            />
+
+            <div className="relative z-10 p-8 md:p-10">
+              {/* App identity row */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-8">
+                {/* App icon / logo mark */}
+                <div
+                  className="w-20 h-20 rounded-2xl flex-shrink-0 flex items-center justify-center"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #E50914 0%, #8B0000 100%)",
+                    boxShadow:
+                      "0 4px 24px rgba(229,9,20,0.4), 0 1px 0 rgba(255,255,255,0.15) inset",
+                  }}
+                >
+                  <Film size={36} className="text-white" />
+                </div>
+
+                <div>
+                  <h3 className="text-white text-3xl font-extrabold tracking-wide leading-tight">
+                    StreamFlix
+                  </h3>
+                  <p
+                    className="text-sm font-medium mt-1"
+                    style={{
+                      background: "linear-gradient(90deg, #E50914, #FF6B6B)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                    }}
+                  >
+                    Your universe of entertainment
+                  </p>
+                  <p className="text-[#B3B3B3] text-xs mt-2">
+                    Version v52 · {new Date().getFullYear()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-[#B3B3B3] text-sm leading-relaxed mb-8 max-w-2xl">
+                A modern streaming discovery platform powered by TMDB,
+                delivering seamless playback across multiple providers. Browse
+                thousands of movies and TV shows, build your watchlist, track
+                your progress across devices, and enjoy a fully immersive
+                cinematic experience — all in one place.
+              </p>
+
+              {/* Stat pills */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+                {STAT_PILLS.map((pill) => (
+                  <div
+                    key={pill.label}
+                    className="flex flex-col gap-1.5 rounded-xl p-4"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      boxShadow:
+                        "0 2px 12px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.06) inset",
+                    }}
+                  >
+                    <pill.icon
+                      size={18}
+                      style={{ color: pill.color }}
+                      className="flex-shrink-0"
+                    />
+                    <span className="text-white text-sm font-bold">
+                      {pill.label}
+                    </span>
+                    <span className="text-[#B3B3B3] text-xs leading-snug">
+                      {pill.sub}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div
+                className="w-full h-px mb-8"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, rgba(229,9,20,0.4), transparent)",
+                }}
+              />
+
+              {/* Credit */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div>
+                  <p className="text-[#B3B3B3] text-xs uppercase tracking-widest mb-1">
+                    Designed &amp; Developed by
+                  </p>
+                  <p
+                    className="text-2xl font-extrabold tracking-wide"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #FFFFFF 0%, #E50914 50%, #FF6B6B 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      filter: "drop-shadow(0 0 12px rgba(229,9,20,0.5))",
+                    }}
+                  >
+                    Shadym
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-[#B3B3B3] text-sm">
+                  <Sparkles
+                    size={15}
+                    className="text-[#E50914] flex-shrink-0"
+                  />
+                  <span>Made with passion for cinema</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Keyframe injection */}
+          <style>{`
+            @keyframes aboutGlowPulse {
+              0%, 100% { opacity: 0.6; }
+              50% { opacity: 1; }
+            }
+          `}</style>
+        </section>
       </div>
     </div>
   );
