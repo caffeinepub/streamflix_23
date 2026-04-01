@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import ContentRow from "../components/ContentRow";
 import ContinueWatchingRow from "../components/ContinueWatchingRow";
+import GenreRow from "../components/GenreRow";
 import HeroBanner from "../components/HeroBanner";
 import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
 import {
@@ -12,6 +13,25 @@ import {
   fetchUpcomingMovies,
 } from "../lib/tmdb";
 import type { MediaItem, Movie, TVShow } from "../lib/types";
+
+const GENRE_ROWS: {
+  label: string;
+  movieId: number;
+  tvId: number;
+}[] = [
+  { label: "Action", movieId: 28, tvId: 10759 },
+  { label: "Comedy", movieId: 35, tvId: 35 },
+  { label: "Drama", movieId: 18, tvId: 18 },
+  { label: "Horror", movieId: 27, tvId: 9648 },
+  { label: "Sci-Fi", movieId: 878, tvId: 10765 },
+  { label: "Thriller", movieId: 53, tvId: 80 },
+  { label: "Animation", movieId: 16, tvId: 16 },
+  { label: "Romance", movieId: 10749, tvId: 10749 },
+  { label: "Documentary", movieId: 99, tvId: 99 },
+  { label: "Fantasy", movieId: 14, tvId: 10765 },
+  { label: "Mystery", movieId: 9648, tvId: 9648 },
+  { label: "Crime", movieId: 80, tvId: 80 },
+];
 
 export default function HomePage() {
   const [trending, setTrending] = useState<MediaItem[]>([]);
@@ -109,6 +129,26 @@ export default function HomePage() {
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
         />
+
+        {/* Genre rows — lazy loaded via IntersectionObserver as user scrolls */}
+        {GENRE_ROWS.map((genre) => (
+          <Fragment key={genre.label}>
+            <GenreRow
+              title={`${genre.label} Movies`}
+              genreId={genre.movieId}
+              mediaType="movie"
+              watchlistIds={watchlistIds}
+              onToggleWatchlist={handleToggleWatchlist}
+            />
+            <GenreRow
+              title={`${genre.label} TV Shows`}
+              genreId={genre.tvId}
+              mediaType="tv"
+              watchlistIds={watchlistIds}
+              onToggleWatchlist={handleToggleWatchlist}
+            />
+          </Fragment>
+        ))}
       </div>
     </div>
   );
