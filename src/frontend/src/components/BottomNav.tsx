@@ -30,8 +30,38 @@ export default function BottomNav() {
   const currentPath = routerState.location.pathname;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0B0B0B] border-t border-[#2A2A2A] h-14">
-      <div className="flex items-stretch h-full">
+    <nav
+      className="fixed bottom-5 left-1/2 z-50 w-[calc(100%-2.5rem)] max-w-lg"
+      style={{ transform: "translateX(-50%)" }}
+    >
+      {/* Outer glow layer */}
+      <div
+        className="absolute inset-0 rounded-2xl pointer-events-none"
+        style={{
+          boxShadow:
+            "0 0 40px rgba(229,9,20,0.08), 0 20px 60px rgba(0,0,0,0.8), 0 8px 24px rgba(0,0,0,0.6)",
+        }}
+      />
+      <div
+        className="relative flex items-stretch h-16 rounded-2xl overflow-hidden border border-white/[0.08]"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(22,22,22,0.97) 0%, rgba(14,14,14,0.98) 50%, rgba(18,18,18,0.97) 100%)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: "blur(24px) saturate(180%)",
+          boxShadow:
+            "0 -1px 0 rgba(255,255,255,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5), 0 -2px 6px rgba(229,9,20,0.08)",
+        }}
+      >
+        {/* Top highlight edge */}
+        <div
+          className="absolute top-0 left-4 right-4 h-px rounded-full pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 30%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.12) 70%, transparent)",
+          }}
+        />
+
         {navItems.map(({ to, label, Icon, ocid }) => {
           const isActive = currentPath === to;
           return (
@@ -40,20 +70,53 @@ export default function BottomNav() {
               type="button"
               data-ocid={ocid}
               onClick={() => navigate({ to })}
-              className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors"
+              className="flex-1 flex flex-col items-center justify-center gap-1 relative group transition-all duration-200"
+              style={{
+                background: isActive ? "rgba(229,9,20,0.06)" : "transparent",
+              }}
             >
+              {/* Hover background */}
+              <span
+                className="absolute inset-1 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))",
+                }}
+              />
+
+              {/* Active indicator dot */}
+              {isActive && (
+                <span
+                  className="absolute top-1.5 w-1 h-1 rounded-full"
+                  style={{
+                    background: "#E50914",
+                    boxShadow: "0 0 6px 2px rgba(229,9,20,0.6)",
+                  }}
+                />
+              )}
+
               <Icon
                 size={20}
-                className={
-                  isActive
-                    ? "text-[#E50914]"
-                    : "text-[#B3B3B3] hover:text-white"
-                }
+                className="relative z-10 transition-all duration-200"
+                style={{
+                  color: isActive ? "#E50914" : "#888",
+                  filter: isActive
+                    ? "drop-shadow(0 0 6px rgba(229,9,20,0.8)) drop-shadow(0 0 12px rgba(229,9,20,0.4))"
+                    : undefined,
+                  transform: isActive
+                    ? "translateY(1px) scale(1.1)"
+                    : undefined,
+                }}
               />
               <span
-                className={`text-[10px] font-medium ${
-                  isActive ? "text-[#E50914]" : "text-[#B3B3B3]"
-                }`}
+                className="relative z-10 text-[9px] font-semibold tracking-wide transition-all duration-200"
+                style={{
+                  color: isActive ? "#E50914" : "#666",
+                  letterSpacing: "0.06em",
+                  textShadow: isActive
+                    ? "0 0 8px rgba(229,9,20,0.5)"
+                    : undefined,
+                }}
               >
                 {label}
               </span>

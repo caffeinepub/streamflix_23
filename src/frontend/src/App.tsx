@@ -47,7 +47,7 @@ function RootLayout() {
   const isWatchPage = pathname.startsWith("/watch");
 
   return (
-    <div className={`bg-[#0B0B0B] min-h-screen${isWatchPage ? "" : " pb-14"}`}>
+    <div className={`bg-[#0B0B0B] min-h-screen${isWatchPage ? "" : " pb-28"}`}>
       <ScrollToTop />
       {!isWatchPage && <Navbar />}
       <Outlet />
