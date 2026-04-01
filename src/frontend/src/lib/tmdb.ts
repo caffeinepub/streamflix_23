@@ -205,3 +205,40 @@ export async function fetchSimilarTV(
 ): Promise<TMDBResponse<TVShow>> {
   return tmdbFetch(`/tv/${id}/similar`);
 }
+
+export interface PersonDetails {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string;
+  popularity: number;
+}
+
+export interface CombinedCreditItem {
+  id: number;
+  media_type: "movie" | "tv";
+  title?: string;
+  name?: string;
+  poster_path: string | null;
+  vote_average: number;
+  popularity: number;
+  character: string;
+  release_date?: string;
+  first_air_date?: string;
+}
+
+export async function fetchPersonDetails(id: number): Promise<PersonDetails> {
+  return tmdbFetch<PersonDetails>(`/person/${id}`);
+}
+
+export async function fetchPersonCombinedCredits(
+  id: number,
+): Promise<{ cast: CombinedCreditItem[] }> {
+  return tmdbFetch<{ cast: CombinedCreditItem[] }>(
+    `/person/${id}/combined_credits`,
+  );
+}

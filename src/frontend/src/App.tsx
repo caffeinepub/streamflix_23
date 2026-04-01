@@ -20,6 +20,7 @@ import ContinueWatchingPage from "./pages/ContinueWatchingPage";
 import HomePage from "./pages/HomePage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import MoviesPage from "./pages/MoviesPage";
+import PersonPage from "./pages/PersonPage";
 import ProfilePage from "./pages/ProfilePage";
 import SearchPage from "./pages/SearchPage";
 import TVDetailPage from "./pages/TVDetailPage";
@@ -143,6 +144,12 @@ const categoryRoute = createRoute({
   component: CategoryPage,
 });
 
+const personRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/person/$personId",
+  component: PersonPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   moviesRoute,
@@ -155,6 +162,7 @@ const routeTree = rootRoute.addChildren([
   continueWatchingRoute,
   profileRoute,
   categoryRoute,
+  personRoute,
 ]);
 
 const router = createRouter({ routeTree });

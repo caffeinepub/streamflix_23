@@ -356,7 +356,17 @@ export default function MovieDetailPage() {
             <h2 className="text-white font-bold text-xl mb-5">Cast</h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
               {cast.map((member) => (
-                <div key={member.id} className="text-center">
+                <button
+                  type="button"
+                  key={member.id}
+                  className="text-center cursor-pointer hover:opacity-80 transition-opacity w-full"
+                  onClick={() =>
+                    navigate({
+                      to: "/person/$personId",
+                      params: { personId: String(member.id) },
+                    })
+                  }
+                >
                   <div
                     className="w-full aspect-square rounded-full overflow-hidden bg-[#2B2B2B] mb-2 mx-auto"
                     style={{ maxWidth: "80px" }}
@@ -380,7 +390,7 @@ export default function MovieDetailPage() {
                   <p className="text-[#555] text-[10px] truncate">
                     {truncate(member.character, 20)}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           </div>

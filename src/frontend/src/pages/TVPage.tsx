@@ -13,6 +13,8 @@ const SORT_OPTIONS = [
   { label: "Release Date", value: "first_air_date.desc" },
 ];
 
+const PAGE_SIZE = 20;
+
 export default function TVPage() {
   const search = useSearch({ from: "/tv" });
   const navigate = useNavigate();
@@ -187,14 +189,19 @@ export default function TVPage() {
         </div>
       ) : (
         <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-visible">
-          {shows.map((show) => (
-            <MediaCard
-              className="w-full"
+          {shows.map((show, index) => (
+            <div
               key={show.id}
-              item={show as MediaItem}
-              inWatchlist={watchlistIds.has(show.id)}
-              onToggleWatchlist={() => toggleWatchlist(show.id, "tv")}
-            />
+              className="card-scale-in"
+              style={{ animationDelay: `${(index % PAGE_SIZE) * 50}ms` }}
+            >
+              <MediaCard
+                className="w-full"
+                item={show as MediaItem}
+                inWatchlist={watchlistIds.has(show.id)}
+                onToggleWatchlist={() => toggleWatchlist(show.id, "tv")}
+              />
+            </div>
           ))}
         </div>
       )}

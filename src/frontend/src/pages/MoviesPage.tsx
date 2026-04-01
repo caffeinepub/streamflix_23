@@ -20,6 +20,8 @@ const SORT_OPTIONS = [
   { label: "Release Date", value: "primary_release_date.desc" },
 ];
 
+const PAGE_SIZE = 20;
+
 export default function MoviesPage() {
   const search = useSearch({ from: "/movies" });
   const navigate = useNavigate();
@@ -194,14 +196,19 @@ export default function MoviesPage() {
         </div>
       ) : (
         <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-visible">
-          {movies.map((movie) => (
-            <MediaCard
-              className="w-full"
+          {movies.map((movie, index) => (
+            <div
               key={movie.id}
-              item={movie as MediaItem}
-              inWatchlist={watchlistIds.has(movie.id)}
-              onToggleWatchlist={() => toggleWatchlist(movie.id, "movie")}
-            />
+              className="card-scale-in"
+              style={{ animationDelay: `${(index % PAGE_SIZE) * 50}ms` }}
+            >
+              <MediaCard
+                className="w-full"
+                item={movie as MediaItem}
+                inWatchlist={watchlistIds.has(movie.id)}
+                onToggleWatchlist={() => toggleWatchlist(movie.id, "movie")}
+              />
+            </div>
           ))}
         </div>
       )}

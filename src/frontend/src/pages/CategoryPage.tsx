@@ -73,6 +73,8 @@ async function fetchCategoryPage(
   }
 }
 
+const PAGE_SIZE = 20;
+
 export default function CategoryPage() {
   const { category } = useParams({ from: "/category/$category" });
   const navigate = useNavigate();
@@ -192,16 +194,21 @@ export default function CategoryPage() {
         </div>
       ) : (
         <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-visible">
-          {items.map((item) => (
-            <MediaCard
-              className="w-full"
+          {items.map((item, index) => (
+            <div
               key={item.id}
-              item={item}
-              inWatchlist={watchlistIds.has(item.id)}
-              onToggleWatchlist={() =>
-                toggleWatchlist(item.id, "title" in item ? "movie" : "tv")
-              }
-            />
+              className="card-scale-in"
+              style={{ animationDelay: `${(index % PAGE_SIZE) * 50}ms` }}
+            >
+              <MediaCard
+                className="w-full"
+                item={item}
+                inWatchlist={watchlistIds.has(item.id)}
+                onToggleWatchlist={() =>
+                  toggleWatchlist(item.id, "title" in item ? "movie" : "tv")
+                }
+              />
+            </div>
           ))}
         </div>
       )}

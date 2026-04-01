@@ -95,16 +95,21 @@ export default function SearchPage() {
             {results.length} results for &ldquo;{query}&rdquo;
           </p>
           <div className="relative grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 overflow-visible">
-            {results.map((item) => (
-              <MediaCard
-                className="w-full"
+            {results.map((item, index) => (
+              <div
                 key={`${item.media_type}-${item.id}`}
-                item={item}
-                inWatchlist={watchlistIds.has(item.id)}
-                onToggleWatchlist={() =>
-                  toggleWatchlist(item.id, isMovie(item) ? "movie" : "tv")
-                }
-              />
+                className="card-scale-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <MediaCard
+                  className="w-full"
+                  item={item}
+                  inWatchlist={watchlistIds.has(item.id)}
+                  onToggleWatchlist={() =>
+                    toggleWatchlist(item.id, isMovie(item) ? "movie" : "tv")
+                  }
+                />
+              </div>
             ))}
           </div>
         </>
