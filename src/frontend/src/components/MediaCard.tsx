@@ -14,51 +14,62 @@ interface MediaCardProps {
 
 const DEFAULT_ACCENT = "rgba(229, 9, 20, 0.85)";
 
-function extractAccentColor(src: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 20;
-        canvas.height = 30;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(DEFAULT_ACCENT);
-          return;
-        }
-        ctx.drawImage(img, 0, 0, 20, 30);
-        const data = ctx.getImageData(0, 0, 20, 30).data;
-
-        let bestR = 229;
-        let bestG = 9;
-        let bestB = 20;
-        let bestSat = -1;
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          const brightness = (r + g + b) / 3;
-          if (brightness < 30 || brightness > 220) continue;
-          const max = Math.max(r, g, b);
-          const min = Math.min(r, g, b);
-          const sat = max === 0 ? 0 : (max - min) / max;
-          if (sat > bestSat) {
-            bestSat = sat;
-            bestR = r;
-            bestG = g;
-            bestB = b;
+async function extractAccentColor(src: string): Promise<string> {
+  try {
+    const response = await fetch(src);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    return await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 20;
+          canvas.height = 30;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            URL.revokeObjectURL(objectUrl);
+            resolve(DEFAULT_ACCENT);
+            return;
           }
+          ctx.drawImage(img, 0, 0, 20, 30);
+          const data = ctx.getImageData(0, 0, 20, 30).data;
+          let bestR = 229;
+          let bestG = 9;
+          let bestB = 20;
+          let bestSat = -1;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const brightness = (r + g + b) / 3;
+            if (brightness < 20 || brightness > 230) continue;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const sat = max === 0 ? 0 : (max - min) / max;
+            if (sat > bestSat) {
+              bestSat = sat;
+              bestR = r;
+              bestG = g;
+              bestB = b;
+            }
+          }
+          URL.revokeObjectURL(objectUrl);
+          resolve(`rgba(${bestR}, ${bestG}, ${bestB}, 0.85)`);
+        } catch {
+          URL.revokeObjectURL(objectUrl);
+          resolve(DEFAULT_ACCENT);
         }
-        resolve(`rgba(${bestR}, ${bestG}, ${bestB}, 0.85)`);
-      } catch {
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
         resolve(DEFAULT_ACCENT);
-      }
-    };
-    img.onerror = () => resolve(DEFAULT_ACCENT);
-    img.src = src;
-  });
+      };
+      img.src = objectUrl;
+    });
+  } catch {
+    return DEFAULT_ACCENT;
+  }
 }
 
 function toAlpha(color: string, alpha: number): string {
