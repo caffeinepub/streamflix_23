@@ -12,6 +12,84 @@ interface MediaCardProps {
   className?: string;
 }
 
+const DEFAULT_ACCENT = "rgba(229, 9, 20, 0.85)";
+
+function extractAccentColor(src: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 20;
+        canvas.height = 30;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(DEFAULT_ACCENT);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, 20, 30);
+        const data = ctx.getImageData(0, 0, 20, 30).data;
+
+        let bestR = 229;
+        let bestG = 9;
+        let bestB = 20;
+        let bestSat = -1;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const brightness = (r + g + b) / 3;
+          if (brightness < 30 || brightness > 220) continue;
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          const sat = max === 0 ? 0 : (max - min) / max;
+          if (sat > bestSat) {
+            bestSat = sat;
+            bestR = r;
+            bestG = g;
+            bestB = b;
+          }
+        }
+        resolve(`rgba(${bestR}, ${bestG}, ${bestB}, 0.85)`);
+      } catch {
+        resolve(DEFAULT_ACCENT);
+      }
+    };
+    img.onerror = () => resolve(DEFAULT_ACCENT);
+    img.src = src;
+  });
+}
+
+function toAlpha(color: string, alpha: number): string {
+  return color.replace(/,[\s\d.]+\)$/, `, ${alpha})`);
+}
+
+function MediaTypeBadge({ mediaType }: { mediaType: "movie" | "tv" }) {
+  const isMovieType = mediaType === "movie";
+  return (
+    <span
+      style={{
+        background: isMovieType ? "rgba(229,9,20,0.9)" : "rgba(29,78,216,0.9)",
+        boxShadow: isMovieType
+          ? "0 2px 8px rgba(229,9,20,0.6), 0 0 12px rgba(229,9,20,0.3), inset 0 1px 0 rgba(255,255,255,0.2)"
+          : "0 2px 8px rgba(29,78,216,0.6), 0 0 12px rgba(29,78,216,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+        borderRadius: "4px",
+        fontSize: "8px",
+        fontWeight: 800,
+        letterSpacing: "0.08em",
+        padding: "2px 5px",
+        color: "white",
+        transform: "translateZ(4px)",
+        display: "inline-block",
+        textTransform: "uppercase",
+      }}
+    >
+      {isMovieType ? "MOVIE" : "TV"}
+    </span>
+  );
+}
+
 export default function MediaCard({
   item,
   inWatchlist,
@@ -20,7 +98,9 @@ export default function MediaCard({
 }: MediaCardProps) {
   const [hovered, setHovered] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT);
   const cardRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const navigate = useNavigate();
   const title = getTitle(item);
   const date = getDate(item);
@@ -32,12 +112,20 @@ export default function MediaCard({
     const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    const dx = (e.clientX - cx) / (rect.width / 2); // -1 to 1
-    const dy = (e.clientY - cy) / (rect.height / 2); // -1 to 1
-    setTilt({ x: dy * -22, y: dx * 22 }); // rotateX inverted so cursor side lifts
+    const dx = (e.clientX - cx) / (rect.width / 2);
+    const dy = (e.clientY - cy) / (rect.height / 2);
+    setTilt({ x: dy * -22, y: dx * 22 });
   }, []);
 
-  const handleMouseEnter = useCallback(() => setHovered(true), []);
+  const handleMouseEnter = useCallback(async () => {
+    setHovered(true);
+    if (item.poster_path) {
+      const src = getPosterUrl(item.poster_path);
+      const color = await extractAccentColor(src);
+      setAccentColor(color);
+    }
+  }, [item.poster_path]);
+
   const handleMouseLeave = useCallback(() => {
     setHovered(false);
     setTilt({ x: 0, y: 0 });
@@ -80,6 +168,9 @@ export default function MediaCard({
     ? `scale(1.18) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`
     : "scale(1) rotateX(0deg) rotateY(0deg)";
 
+  const accentAt40 = toAlpha(accentColor, 0.4);
+  const accentAt50 = toAlpha(accentColor, 0.5);
+
   return (
     <div
       ref={cardRef}
@@ -90,6 +181,10 @@ export default function MediaCard({
         position: "relative",
         zIndex: hovered ? 50 : "auto",
         perspective: "800px",
+        filter: hovered
+          ? `drop-shadow(0 0 12px ${accentColor}) drop-shadow(0 0 24px ${accentAt50})`
+          : "none",
+        transition: "filter 0.4s ease-out",
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -105,6 +200,7 @@ export default function MediaCard({
         <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
           {item.poster_path ? (
             <img
+              ref={imgRef}
               src={getPosterUrl(item.poster_path)}
               alt={title}
               className="w-full h-full object-cover"
@@ -119,9 +215,7 @@ export default function MediaCard({
           )}
           {/* Media type badge */}
           <div className="absolute top-1.5 left-1.5">
-            <span className="text-[9px] font-bold bg-[#E50914] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
-              {mediaType === "movie" ? "M" : "TV"}
-            </span>
+            <MediaTypeBadge mediaType={mediaType} />
           </div>
         </div>
         <p className="mt-1.5 text-xs text-[#B3B3B3] truncate">{title}</p>
@@ -138,11 +232,11 @@ export default function MediaCard({
           opacity: hovered ? 1 : 0,
           transform: hoverTransform,
           boxShadow: hovered
-            ? "0 30px 60px rgba(0,0,0,0.85), 0 0 0 2px rgba(255,255,255,0.15)"
+            ? `0 0 20px 8px ${accentColor}, 0 0 40px 15px ${accentAt40}, 0 30px 60px rgba(0,0,0,0.85), 0 0 0 2px rgba(255,255,255,0.15)`
             : "none",
           transition: hovered
-            ? "transform 0.08s linear, opacity 0.3s ease-out, box-shadow 0.35s ease-out"
-            : "transform 0.4s ease-out, opacity 0.3s ease-out, box-shadow 0.35s ease-out",
+            ? "transform 0.08s linear, opacity 0.3s ease-out, box-shadow 0.4s ease-out"
+            : "transform 0.4s ease-out, opacity 0.3s ease-out, box-shadow 0.4s ease-out",
           pointerEvents: hovered ? "auto" : "none",
         }}
       >
@@ -171,10 +265,18 @@ export default function MediaCard({
 
           {/* Media type badge */}
           <div className="absolute top-1.5 left-1.5">
-            <span className="text-[9px] font-bold bg-[#E50914] text-white px-1.5 py-0.5 rounded uppercase tracking-wider">
-              {mediaType === "movie" ? "M" : "TV"}
-            </span>
+            <MediaTypeBadge mediaType={mediaType} />
           </div>
+
+          {/* Gloss shimmer sweep on hover */}
+          <div
+            aria-hidden="true"
+            className="card-gloss-shimmer"
+            style={{
+              opacity: hovered ? 1 : 0,
+              animation: hovered ? "cardGloss 0.6s ease-out forwards" : "none",
+            }}
+          />
 
           {/* Bottom overlay content */}
           <div className="absolute bottom-0 left-0 right-0 p-2.5">
@@ -193,7 +295,7 @@ export default function MediaCard({
               </div>
             </div>
 
-            {/* Action buttons — fade in with slight delay after card starts lifting */}
+            {/* Action buttons */}
             <div
               className="flex items-center gap-2"
               style={{

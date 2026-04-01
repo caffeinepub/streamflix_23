@@ -20,8 +20,8 @@ export default function Navbar() {
     >
       <div className="max-w-[1400px] mx-auto px-6 md:px-14 h-16 flex items-center">
         <Link to="/" data-ocid="nav.home.link" className="shrink-0">
-          <span className="text-[#E50914] text-2xl font-black tracking-tight select-none">
-            StreamFlix
+          <span className="streamflix-logo-wrapper">
+            <span className="streamflix-logo select-none">STREAMFLIX</span>
           </span>
         </Link>
       </div>

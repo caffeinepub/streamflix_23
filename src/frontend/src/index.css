@@ -78,3 +78,190 @@
 .card-scale-in {
   animation: cardScaleIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ── StreamFlix 3D Extruded Logo ── */
+@keyframes logoExtrude {
+  0% {
+    text-shadow:
+      1px 1px 0 #c0070f,
+      2px 2px 0 #a00008,
+      3px 3px 0 #8b0000,
+      4px 4px 0 #6e0000,
+      5px 5px 0 #5a0000,
+      6px 6px 1px rgba(26, 0, 0, 0.6),
+      7px 7px 2px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(229, 9, 20, 0.15);
+    transform: perspective(200px) rotateX(0deg) rotateY(0deg);
+  }
+  25% {
+    text-shadow:
+      1px 2px 0 #c0070f,
+      2px 4px 0 #a00008,
+      3px 6px 0 #8b0000,
+      4px 8px 0 #6e0000,
+      5px 9px 0 #5a0000,
+      6px 10px 1px rgba(26, 0, 0, 0.6),
+      7px 12px 3px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(229, 9, 20, 0.3);
+    transform: perspective(200px) rotateX(2deg) rotateY(-1deg);
+  }
+  50% {
+    text-shadow:
+      1px 1px 0 #c0070f,
+      2px 2px 0 #a00008,
+      3px 3px 0 #8b0000,
+      4px 4px 0 #6e0000,
+      5px 5px 0 #5a0000,
+      6px 6px 1px rgba(26, 0, 0, 0.55),
+      7px 7px 3px rgba(0, 0, 0, 0.45),
+      0 0 24px rgba(229, 9, 20, 0.2);
+    transform: perspective(200px) rotateX(0deg) rotateY(1deg);
+  }
+  75% {
+    text-shadow:
+      1px 2px 0 #c0070f,
+      2px 4px 0 #a00008,
+      3px 6px 0 #8b0000,
+      4px 8px 0 #6e0000,
+      5px 9px 0 #5a0000,
+      6px 10px 1px rgba(26, 0, 0, 0.6),
+      7px 12px 3px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(229, 9, 20, 0.28);
+    transform: perspective(200px) rotateX(-1deg) rotateY(2deg);
+  }
+  100% {
+    text-shadow:
+      1px 1px 0 #c0070f,
+      2px 2px 0 #a00008,
+      3px 3px 0 #8b0000,
+      4px 4px 0 #6e0000,
+      5px 5px 0 #5a0000,
+      6px 6px 1px rgba(26, 0, 0, 0.6),
+      7px 7px 2px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(229, 9, 20, 0.15);
+    transform: perspective(200px) rotateX(0deg) rotateY(0deg);
+  }
+}
+
+.streamflix-logo {
+  font-family: "Inter", sans-serif;
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #e50914;
+  display: inline-block;
+  animation: logoExtrude 4s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: text-shadow, transform;
+}
+
+/* ── Logo shimmer wrapper ── */
+.streamflix-logo-wrapper {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+/* ── Card gloss shimmer on hover ── */
+.card-gloss-shimmer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 80%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  border-radius: inherit;
+}
+
+@keyframes cardGloss {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+    opacity: 0.5;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   StreamFlix 3D Design System Standard
+   All future features must follow this 3D design language:
+   - Glassmorphism: backdrop-blur + semi-transparent bg + subtle border
+   - Depth shadows: multi-layer box-shadow with dark ambient + colored glow
+   - 3D transforms: perspective + rotateX/Y for interactive elements
+   - Glowing accents: colored box-shadow with rgba glow layers
+   - Floating animations: slow up/down drift for decorative elements
+──────────────────────────────────────────────────────────────── */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotateX(0deg);
+  }
+  33% {
+    transform: translateY(-12px) rotateX(3deg);
+  }
+  66% {
+    transform: translateY(-6px) rotateX(-2deg);
+  }
+}
+
+@keyframes floatReverse {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(10px) rotate(5deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 30px rgba(229, 9, 20, 0.3), 0 0 60px rgba(229, 9, 20, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 50px rgba(229, 9, 20, 0.5), 0 0 100px rgba(229, 9, 20, 0.25);
+  }
+}
+
+@keyframes orbitFloat {
+  0% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) translateX(4px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(0px) translateX(8px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(8px) translateX(4px) rotate(-5deg);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 5s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.animate-orbit {
+  animation: orbitFloat 6s ease-in-out infinite;
+}
