@@ -213,18 +213,10 @@ export default function ContinueWatchingRow() {
 
   return (
     <section className="px-6 md:px-14 mb-8">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center mb-4">
         <h2 className="text-white text-xl md:text-2xl font-bold">
           Continue Watching
         </h2>
-        <button
-          type="button"
-          data-ocid="continue_watching.view_all_button"
-          onClick={() => void navigate({ to: "/continue-watching" })}
-          className="text-[#E50914] text-sm hover:underline hover:text-[#ff1a24] transition-colors flex items-center gap-0.5 shrink-0"
-        >
-          View All <span aria-hidden>›</span>
-        </button>
       </div>
       <div className="relative group">
         <button

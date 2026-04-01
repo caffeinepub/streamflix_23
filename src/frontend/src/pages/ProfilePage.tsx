@@ -3,6 +3,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import {
   BookmarkX,
   Clock,
+  Download,
   List,
   LogOut,
   Play,
@@ -15,6 +16,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useFirestoreWatchHistory } from "../hooks/useFirestoreWatchHistory";
 import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
+import { usePWAInstall } from "../hooks/usePWAInstall";
 import { useStreamingProvider } from "../hooks/useStreamingProvider";
 import type { StreamingProvider } from "../hooks/useStreamingProvider";
 import { db } from "../lib/firebase";
@@ -111,6 +113,7 @@ export default function ProfilePage() {
   const { toggleWatchlist } = useFirestoreWatchlist();
   const navigate = useNavigate();
   const [provider, setProvider] = useStreamingProvider();
+  const { canInstall, isInstalled, install } = usePWAInstall();
 
   const [watchlistDocs, setWatchlistDocs] = useState<WatchlistDoc[]>([]);
   const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
@@ -237,6 +240,23 @@ export default function ProfilePage() {
                 <LogOut size={15} />
                 Sign Out
               </button>
+              {canInstall && (
+                <button
+                  type="button"
+                  data-ocid="profile.install_button"
+                  onClick={() => void install()}
+                  className="mt-3 flex items-center gap-2 px-5 py-2 bg-[#E50914] hover:bg-[#C40812] text-white rounded-md text-sm font-semibold transition-colors"
+                >
+                  <Download size={15} />
+                  Install App
+                </button>
+              )}
+              {isInstalled && (
+                <p className="mt-3 text-[#B3B3B3] text-xs flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  App is installed
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -255,6 +275,23 @@ export default function ProfilePage() {
               >
                 Sign In
               </button>
+              {canInstall && (
+                <button
+                  type="button"
+                  data-ocid="profile.install_button"
+                  onClick={() => void install()}
+                  className="mt-3 flex items-center gap-2 px-5 py-2 bg-[#E50914] hover:bg-[#C40812] text-white rounded-md text-sm font-semibold transition-colors"
+                >
+                  <Download size={15} />
+                  Install App
+                </button>
+              )}
+              {isInstalled && (
+                <p className="mt-3 text-[#B3B3B3] text-xs flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  App is installed
+                </p>
+              )}
             </>
           )}
         </div>

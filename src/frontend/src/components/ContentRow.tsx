@@ -41,9 +41,9 @@ export default function ContentRow({
             type="button"
             onClick={onViewAll}
             data-ocid="content_row.view_all_button"
-            className="text-[#E50914] text-sm hover:underline hover:text-[#ff1a24] transition-colors flex items-center gap-0.5 shrink-0"
+            className="text-xs font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full border border-white/30 text-white/80 hover:border-white hover:text-white hover:bg-white/10 transition-all duration-200 flex items-center gap-1 shrink-0"
           >
-            View All <span aria-hidden>›</span>
+            View All <ChevronRight size={14} />
           </button>
         )}
       </div>
