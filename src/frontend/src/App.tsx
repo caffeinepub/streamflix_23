@@ -15,6 +15,7 @@ import Navbar from "./components/Navbar";
 import SignInModal from "./components/SignInModal";
 import { AuthProvider } from "./contexts/AuthContext";
 import { hasApiKey } from "./lib/tmdb";
+import CategoryPage from "./pages/CategoryPage";
 import ContinueWatchingPage from "./pages/ContinueWatchingPage";
 import HomePage from "./pages/HomePage";
 import MovieDetailPage from "./pages/MovieDetailPage";
@@ -70,12 +71,28 @@ const moviesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/movies",
   component: MoviesPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    genre:
+      typeof search.genre === "number"
+        ? search.genre
+        : search.genre
+          ? Number(search.genre)
+          : undefined,
+  }),
 });
 
 const tvRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tv",
   component: TVPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    genre:
+      typeof search.genre === "number"
+        ? search.genre
+        : search.genre
+          ? Number(search.genre)
+          : undefined,
+  }),
 });
 
 const searchRoute = createRoute({
@@ -120,6 +137,12 @@ const profileRoute = createRoute({
   component: ProfilePage,
 });
 
+const categoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/category/$category",
+  component: CategoryPage,
+});
+
 const routeTree = rootRoute.addChildren([
   homeRoute,
   moviesRoute,
@@ -131,6 +154,7 @@ const routeTree = rootRoute.addChildren([
   watchTVRoute,
   continueWatchingRoute,
   profileRoute,
+  categoryRoute,
 ]);
 
 const router = createRouter({ routeTree });

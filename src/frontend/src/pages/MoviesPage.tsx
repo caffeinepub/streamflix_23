@@ -1,3 +1,4 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import MediaCard from "../components/MediaCard";
 import { useFirestoreWatchlist } from "../hooks/useFirestoreWatchlist";
@@ -20,9 +21,13 @@ const SORT_OPTIONS = [
 ];
 
 export default function MoviesPage() {
+  const search = useSearch({ from: "/movies" });
+  const navigate = useNavigate();
   const [genres, setGenres] = useState<Genre[]>([]);
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
+  const [selectedGenre, setSelectedGenre] = useState<number | null>(
+    (search as { genre?: number }).genre ?? null,
+  );
   const [sortBy, setSortBy] = useState("popularity.desc");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -116,6 +121,7 @@ export default function MoviesPage() {
 
   function selectGenre(id: number | null) {
     setSelectedGenre(id);
+    void navigate({ to: "/movies", search: { genre: id ?? undefined } });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 

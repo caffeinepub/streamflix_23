@@ -10,6 +10,7 @@ interface ContentRowProps {
   loading?: boolean;
   watchlistIds?: Set<number>;
   onToggleWatchlist?: (item: MediaItem) => void;
+  onViewAll?: () => void;
 }
 
 export default function ContentRow({
@@ -18,6 +19,7 @@ export default function ContentRow({
   loading,
   watchlistIds,
   onToggleWatchlist,
+  onViewAll,
 }: ContentRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -32,9 +34,19 @@ export default function ContentRow({
 
   return (
     <div className="py-4 group/row">
-      <h2 className="text-white font-semibold text-lg md:text-xl mb-3 px-6 md:px-14">
-        {title}
-      </h2>
+      <div className="flex items-center justify-between px-6 md:px-14 mb-3">
+        <h2 className="text-white font-semibold text-lg md:text-xl">{title}</h2>
+        {onViewAll && (
+          <button
+            type="button"
+            onClick={onViewAll}
+            data-ocid="content_row.view_all_button"
+            className="text-[#E50914] text-sm hover:underline hover:text-[#ff1a24] transition-colors flex items-center gap-0.5 shrink-0"
+          >
+            View All <span aria-hidden>›</span>
+          </button>
+        )}
+      </div>
       <div className="relative overflow-visible">
         {/* Left arrow */}
         <button

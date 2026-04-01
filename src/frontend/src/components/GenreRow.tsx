@@ -9,6 +9,7 @@ interface GenreRowProps {
   mediaType: "movie" | "tv";
   watchlistIds?: Set<number>;
   onToggleWatchlist?: (item: MediaItem) => void;
+  onViewAll?: () => void;
 }
 
 export default function GenreRow({
@@ -17,6 +18,7 @@ export default function GenreRow({
   mediaType,
   watchlistIds,
   onToggleWatchlist,
+  onViewAll,
 }: GenreRowProps) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +68,7 @@ export default function GenreRow({
         loading={loading || (!loaded && items.length === 0)}
         watchlistIds={watchlistIds}
         onToggleWatchlist={onToggleWatchlist}
+        onViewAll={onViewAll}
       />
     </div>
   );

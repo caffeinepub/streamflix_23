@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { Fragment, useEffect, useState } from "react";
 import ContentRow from "../components/ContentRow";
 import ContinueWatchingRow from "../components/ContinueWatchingRow";
@@ -34,6 +35,7 @@ const GENRE_ROWS: {
 ];
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [trending, setTrending] = useState<MediaItem[]>([]);
   const [popular, setPopular] = useState<Movie[]>([]);
   const [topRatedTV, setTopRatedTV] = useState<TVShow[]>([]);
@@ -93,6 +95,12 @@ export default function HomePage() {
           loading={loading}
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
+          onViewAll={() =>
+            void navigate({
+              to: "/category/$category",
+              params: { category: "trending" },
+            })
+          }
         />
         <ContentRow
           title="Popular Movies"
@@ -100,6 +108,12 @@ export default function HomePage() {
           loading={loading}
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
+          onViewAll={() =>
+            void navigate({
+              to: "/category/$category",
+              params: { category: "popular-movies" },
+            })
+          }
         />
         <ContentRow
           title="Top Rated TV Shows"
@@ -107,6 +121,12 @@ export default function HomePage() {
           loading={loading}
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
+          onViewAll={() =>
+            void navigate({
+              to: "/category/$category",
+              params: { category: "top-rated-tv" },
+            })
+          }
         />
         <ContentRow
           title="Now Playing"
@@ -114,6 +134,12 @@ export default function HomePage() {
           loading={loading}
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
+          onViewAll={() =>
+            void navigate({
+              to: "/category/$category",
+              params: { category: "now-playing" },
+            })
+          }
         />
         <ContentRow
           title="Airing Today"
@@ -121,6 +147,12 @@ export default function HomePage() {
           loading={loading}
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
+          onViewAll={() =>
+            void navigate({
+              to: "/category/$category",
+              params: { category: "airing-today" },
+            })
+          }
         />
         <ContentRow
           title="Upcoming Movies"
@@ -128,6 +160,12 @@ export default function HomePage() {
           loading={loading}
           watchlistIds={watchlistIds}
           onToggleWatchlist={handleToggleWatchlist}
+          onViewAll={() =>
+            void navigate({
+              to: "/category/$category",
+              params: { category: "upcoming" },
+            })
+          }
         />
 
         {/* Genre rows — lazy loaded via IntersectionObserver as user scrolls */}
@@ -139,6 +177,12 @@ export default function HomePage() {
               mediaType="movie"
               watchlistIds={watchlistIds}
               onToggleWatchlist={handleToggleWatchlist}
+              onViewAll={() =>
+                void navigate({
+                  to: "/movies",
+                  search: { genre: genre.movieId },
+                })
+              }
             />
             <GenreRow
               title={`${genre.label} TV Shows`}
@@ -146,6 +190,12 @@ export default function HomePage() {
               mediaType="tv"
               watchlistIds={watchlistIds}
               onToggleWatchlist={handleToggleWatchlist}
+              onViewAll={() =>
+                void navigate({
+                  to: "/tv",
+                  search: { genre: genre.tvId },
+                })
+              }
             />
           </Fragment>
         ))}
